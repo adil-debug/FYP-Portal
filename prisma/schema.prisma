@@ -1,0 +1,330 @@
+// Prisma schema for the Project Oversight Portal
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Enums
+// ─────────────────────────────────────────────────────────────────────────
+
+/// Portal user roles. Students never log in — they only receive emails.
+enum Role {
+  COORDINATOR
+  FACULTY
+}
+
+/// A project is either a software application or a research project.
+/// Each type follows a different phase checklist (see ProjectPhase).
+enum ProjectType {
+  SOFTWARE
+  RESEARCH
+}
+
+/// FYP is split across two semesters, each worth 100 marks (200 total).
+enum Semester {
+  FYP_1 // semester 7
+  FYP_2 // semester 8
+}
+
+/// The five markable components of the rubric.
+enum ComponentType {
+  PROPOSAL_SUBMISSION
+  WEEKLY_MEETINGS
+  SDLC_PHASE
+  PLAGIARISM
+  THESIS_QUALITY
+}
+
+/// Ordered phases for a SOFTWARE project (standard SDLC).
+enum SoftwarePhase {
+  REQUIREMENTS
+  DESIGN
+  IMPLEMENTATION
+  TESTING
+  DEPLOYMENT_MAINTENANCE
+}
+
+/// Ordered phases for a RESEARCH project.
+enum ResearchPhase {
+  LITERATURE_REVIEW
+  PROPOSAL
+  METHODOLOGY
+  DATA_COLLECTION
+  ANALYSIS
+  THESIS_WRITING
+}
+
+/// Status of a single phase for a given project.
+enum PhaseStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Users (Faculty & Coordinator) — students do not log in
+// ─────────────────────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Projects this faculty member supervises (empty for coordinators)
+  supervisedProjects Project[]      @relation("SupervisorProjects")
+  createdProjects    Project[]      @relation("ProjectCreatedBy")
+  weightSchemes      WeightScheme[] @relation("WeightSchemeCreatedBy")
+  marksGiven         Mark[]         @relation("MarkGivenBy")
+
+  @@index([role])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Academic session (e.g. "2025-2026") groups projects; a session contains
+// both FYP-I and FYP-II for the same cohort.
+// ─────────────────────────────────────────────────────────────────────────
+
+model AcademicSession {
+  id        String    @id @default(cuid())
+  /// e.g. "2025-2026"
+  title     String    @unique
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  projects  Project[]
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Students — no login, only receive email notifications
+// ─────────────────────────────────────────────────────────────────────────
+
+model Student {
+  id            String   @id @default(cuid())
+  name          String
+  rollNumber    String   @unique
+  email         String
+  createdAt     DateTime @default(now())
+
+  memberships   ProjectMember[]
+  marks         Mark[]
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Weight scheme — configurable marks distribution for the 5 components,
+// per semester (each semester totals 100). Coordinator defines a default;
+// faculty can clone/override it per project.
+// ─────────────────────────────────────────────────────────────────────────
+
+model WeightScheme {
+  id           String   @id @default(cuid())
+  name         String
+  /// True for the single scheme coordinator marks as the default for new projects
+  isDefault    Boolean  @default(false)
+  createdById  String
+  createdBy    User     @relation("WeightSchemeCreatedBy", fields: [createdById], references: [id])
+  createdAt    DateTime @default(now())
+
+  componentWeights ComponentWeight[]
+  projects         Project[]
+
+  @@index([isDefault])
+}
+
+/// One weight entry = how many of the 100 marks for a given semester
+/// this component is worth. A scheme should have at most one row per
+/// (semester, componentType) pair, and the rows for a semester should
+/// sum to 100 — enforced in application code, not the DB, since the
+/// portal must allow drafts that don't sum to 100 yet.
+model ComponentWeight {
+  id             String        @id @default(cuid())
+  weightSchemeId String
+  weightScheme   WeightScheme  @relation(fields: [weightSchemeId], references: [id], onDelete: Cascade)
+  semester       Semester
+  componentType  ComponentType
+  maxMarks       Decimal       @db.Decimal(5, 2)
+
+  @@unique([weightSchemeId, semester, componentType])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Project
+// ─────────────────────────────────────────────────────────────────────────
+
+model Project {
+  id          String      @id @default(cuid())
+  title       String
+  description String?
+  type        ProjectType
+
+  academicSessionId String
+  academicSession   AcademicSession @relation(fields: [academicSessionId], references: [id])
+
+  supervisorId String
+  supervisor   User   @relation("SupervisorProjects", fields: [supervisorId], references: [id])
+
+  createdById String
+  createdBy   User   @relation("ProjectCreatedBy", fields: [createdById], references: [id])
+
+  weightSchemeId String
+  weightScheme   WeightScheme @relation(fields: [weightSchemeId], references: [id])
+
+  proposalSubmittedAt DateTime?
+  proposalDueAt       DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members        ProjectMember[]
+  phases         ProjectPhaseProgress[]
+  meetings       WeeklyMeeting[]
+  marks          Mark[]
+  plagiarismChecks PlagiarismCheck[]
+  thesisReviews  ThesisReview[]
+
+  @@index([academicSessionId])
+  @@index([supervisorId])
+  @@index([type])
+}
+
+/// Join table: a project has at most 3 students.
+model ProjectMember {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id])
+
+  @@unique([projectId, studentId])
+  @@index([studentId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// SDLC / Research phase tracking
+// ─────────────────────────────────────────────────────────────────────────
+
+/// Tracks completion of one phase (software OR research — only one of
+/// softwarePhase/researchPhase is set, matching the project's type) for
+/// a specific project.
+model ProjectPhaseProgress {
+  id            String        @id @default(cuid())
+  projectId     String
+  project       Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  softwarePhase SoftwarePhase?
+  researchPhase ResearchPhase?
+  status        PhaseStatus   @default(NOT_STARTED)
+  completedAt   DateTime?
+  notes         String?
+  updatedAt     DateTime      @updatedAt
+
+  @@unique([projectId, softwarePhase])
+  @@unique([projectId, researchPhase])
+  @@index([projectId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Weekly meetings — attendance/log backing the "weekly meetings" component
+// ─────────────────────────────────────────────────────────────────────────
+
+model WeeklyMeeting {
+  id         String   @id @default(cuid())
+  projectId  String
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  meetingDate DateTime
+  held       Boolean  @default(true)
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  @@index([projectId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Plagiarism — faculty enters a similarity % from an external tool
+// (e.g. Turnitin); the portal stores it and it feeds the plagiarism mark.
+// ─────────────────────────────────────────────────────────────────────────
+
+model PlagiarismCheck {
+  id             String   @id @default(cuid())
+  projectId      String
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  similarityPct  Decimal  @db.Decimal(5, 2)
+  checkedAt      DateTime @default(now())
+  notes          String?
+
+  @@index([projectId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Thesis quality review notes (qualitative backing for the mark)
+// ─────────────────────────────────────────────────────────────────────────
+
+model ThesisReview {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  semester  Semester
+  comments  String?
+  reviewedAt DateTime @default(now())
+
+  @@index([projectId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Marks — the core rubric table. One row per (project, student, semester,
+// component). Marks are per-student (not per-group), so group members can
+// receive different marks for the same component.
+// ─────────────────────────────────────────────────────────────────────────
+
+model Mark {
+  id            String        @id @default(cuid())
+  projectId     String
+  project       Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  studentId     String
+  student       Student       @relation(fields: [studentId], references: [id])
+  semester      Semester
+  componentType ComponentType
+  marksAwarded  Decimal       @db.Decimal(5, 2)
+  maxMarks      Decimal       @db.Decimal(5, 2)
+  remarks       String?
+
+  givenById String
+  givenBy   User   @relation("MarkGivenBy", fields: [givenById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  emailNotifications MarkEmailNotification[]
+
+  @@unique([projectId, studentId, semester, componentType])
+  @@index([studentId])
+  @@index([projectId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Email audit trail — one row per email actually sent, so we can show
+// delivery history/debug failures instead of firing blind.
+// ─────────────────────────────────────────────────────────────────────────
+
+model MarkEmailNotification {
+  id        String   @id @default(cuid())
+  markId    String
+  mark      Mark     @relation(fields: [markId], references: [id], onDelete: Cascade)
+  studentId String
+  sentTo    String
+  subject   String
+  status    String   // "SENT" | "FAILED"
+  errorText String?
+  sentAt    DateTime @default(now())
+
+  @@index([markId])
+  @@index([studentId])
+}

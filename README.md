@@ -36,7 +36,7 @@ current marks across all components.
 4. **Coordinator features** — create faculty &amp; student accounts, academic sessions, weight schemes
 5. **Project creation & assignment** — faculty &amp; coordinator create projects, assign students
 6. **SDLC / research phase tracking UI** — supervisor/coordinator update phase status & notes
-7. Marks entry (per student, per component, per semester)
+7. **Marks entry** (this step) — per student, per component, per semester
 8. Email notifications on mark updates
 9. Dashboards (faculty view, coordinator view)
 10. UI polish & deployment finalization
@@ -251,6 +251,40 @@ and `updatePhaseProgress` do, verified end-to-end with a non-supervising
 faculty account that's redirected away before it can reach the edit page,
 and with a seeded project that has a mark attached to confirm delete is
 actually blocked (not just discouraged in the UI).
+
+## Marks entry
+
+On a project's detail page, a **Marks** grid sits below the phase tracker
+(`src/app/projects/[id]/marks-grid.tsx`, backed by the `upsertMark` Server
+Function in `src/lib/actions/marks.ts`):
+
+- One row per student, one column per rubric component, with a **FYP-I /
+  FYP-II** tab to switch semesters — each semester's marks are entered and
+  stored completely independently.
+- Each column header shows the max marks configured for that component in
+  **this semester**, read from the project's weight scheme
+  (`ComponentWeight`). Faculty/coordinator only ever enter the *awarded*
+  mark; the max is never editable from this grid — it's owned by the weight
+  scheme (`/coordinator/weight-schemes`).
+- Clicking a cell opens a small inline form (marks awarded + optional
+  remarks) and saves via the Server Function; the cell shows "not set" if
+  the project's weight scheme doesn't allocate any marks to that component
+  for the selected semester (entry is blocked in that case, both in the UI
+  and server-side).
+- **Authorization** matches the phase tracker: the supervising faculty
+  member or any coordinator can enter marks; anyone else can't even reach
+  the project's page. **The maximum is always re-read from the weight
+  scheme server-side** and a submitted mark is rejected if it exceeds that
+  ceiling — verified end-to-end by bypassing the browser's own HTML5 `max=`
+  validation and confirming the server still rejects an over-max value and
+  leaves the database unchanged.
+- A per-student **Total** column sums that student's marks across all 5
+  components for the selected semester.
+- Marks aren't emailed to students yet — that's Phase 8. For now, a `Mark`
+  row existing at all is also what blocks a project or a faculty account
+  from being deleted (see the CRUD sections above), so removing test marks
+  requires clearing them first (there's no bulk-delete UI for marks yet;
+  this can be added if needed before Phase 8).
 
 ## Mobile layout & editable-field affordance
 

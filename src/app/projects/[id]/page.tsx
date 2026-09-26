@@ -6,9 +6,12 @@ import {
   PROJECT_TYPE_LABELS,
   SOFTWARE_PHASE_LABELS,
   RESEARCH_PHASE_LABELS,
+  SEMESTERS,
+  COMPONENT_TYPES,
 } from "@/lib/rubric";
 import { PhaseRow } from "./phase-row";
 import { DeleteProjectButton } from "./delete-project-button";
+import { MarksGrid } from "./marks-grid";
 
 export default async function ProjectDetailPage(
   props: PageProps<"/projects/[id]">,
@@ -25,8 +28,9 @@ export default async function ProjectDetailPage(
       members: { include: { student: true } },
       academicSession: true,
       supervisor: { select: { id: true, name: true, email: true } },
-      weightScheme: { select: { name: true } },
+      weightScheme: { include: { componentWeights: true } },
       phases: true,
+      marks: true,
       _count: { select: { marks: true } },
     },
   });
@@ -55,6 +59,35 @@ export default async function ProjectDetailPage(
   const backHref = user.role === "COORDINATOR" ? "/coordinator/projects" : "/dashboard";
   const canEditPhases =
     user.role === "COORDINATOR" || project.supervisorId === user.userId;
+  const canEditMarks = canEditPhases; // same rule: supervisor or coordinator
+
+  const weightsBySemester: Record<string, Record<string, number>> = {};
+  for (const semester of SEMESTERS) {
+    weightsBySemester[semester] = {};
+    for (const component of COMPONENT_TYPES) {
+      const weight = project.weightScheme.componentWeights.find(
+        (w) => w.semester === semester && w.componentType === component,
+      );
+      weightsBySemester[semester][component] = weight
+        ? Number(weight.maxMarks)
+        : 0;
+    }
+  }
+
+  const marksBySemester: Record<
+    string,
+    Record<string, { marksAwarded: number; maxMarks: number; remarks: string | null }>
+  > = {};
+  for (const semester of SEMESTERS) {
+    marksBySemester[semester] = {};
+  }
+  for (const mark of project.marks) {
+    marksBySemester[mark.semester][`${mark.studentId}_${mark.componentType}`] = {
+      marksAwarded: Number(mark.marksAwarded),
+      maxMarks: Number(mark.maxMarks),
+      remarks: mark.remarks,
+    };
+  }
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-8 sm:px-6 sm:py-10">
@@ -169,6 +202,18 @@ export default async function ProjectDetailPage(
           })}
         </ul>
       </div>
+
+      <MarksGrid
+        projectId={project.id}
+        students={project.members.map((m) => ({
+          id: m.student.id,
+          name: m.student.name,
+          rollNumber: m.student.rollNumber,
+        }))}
+        marksBySemester={marksBySemester}
+        weightsBySemester={weightsBySemester}
+        canEdit={canEditMarks}
+      />
     </div>
   );
 }

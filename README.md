@@ -36,9 +36,16 @@ current marks across all components.
 4. **Coordinator features** — create faculty &amp; student accounts, academic sessions, weight schemes
 5. **Project creation & assignment** — faculty &amp; coordinator create projects, assign students
 6. **SDLC / research phase tracking UI** — supervisor/coordinator update phase status & notes
-7. **Marks entry** (this step) — per student, per component, per semester
-8. Email notifications on mark updates
-9. Dashboards (faculty view, coordinator view)
+7. **Marks entry** — per student, per component, per semester
+8. **Email notifications on mark updates — skipped for now.** Resend (the
+   email provider) requires verifying a domain you own before it can send
+   to real recipients; a Vercel `.vercel.app` URL doesn't qualify, since
+   Vercel owns that domain, not you. Since buying a domain isn't a cost the
+   user wants to take on right now, this phase is deliberately deferred,
+   not forgotten — it can be picked up later once a domain is available,
+   without changing anything already built.
+9. **Dashboards** (this step) — marks progress, at-risk flags, coordinator
+   marks overview, simple charts, downloadable award lists
 10. UI polish & deployment finalization
 
 ## Getting started locally
@@ -285,6 +292,55 @@ Function in `src/lib/actions/marks.ts`):
   from being deleted (see the CRUD sections above), so removing test marks
   requires clearing them first (there's no bulk-delete UI for marks yet;
   this can be added if needed before Phase 8).
+
+## Phase 9: Dashboards
+
+Faculty and coordinator dashboards now surface project health at a glance,
+without adding any new database tables — everything is computed on the fly
+from existing phases/marks data in `src/lib/project-stats.ts`.
+
+- **Marks progress per project** (`computeMarksProgress`). For each
+  project, counts how many (student, semester, component) mark "slots" are
+  actually configured by the weight scheme (a slot only counts if that
+  component has a max mark greater than 0 for that semester) and how many
+  of those slots have a `Mark` row entered so far. Shown as an `entered /
+  total` count with a progress bar on the faculty dashboard, and rolled up
+  into an "all projects" total on the coordinator overview.
+- **At-risk / needs-attention flag** (`isProjectAtRisk`). A project is
+  flagged when **either** of these is true (an OR, not an AND — either
+  condition alone is enough to warrant a look):
+  - every phase is still `NOT_STARTED` (nothing has begun despite the
+    project existing), or
+  - any mark entered so far is below 50% of its own max — checked
+    component-by-component, not as a project-wide average, since one weak
+    component is enough to flag it even if others are strong.
+  Flagged projects show a red "Needs attention" badge on the faculty
+  dashboard and in the coordinator marks overview table.
+- **Coordinator-wide marks overview** (`/coordinator/marks-overview`) — one
+  table with every project across every faculty member: title, type,
+  supervisor, academic session, marks-entered count, running mark total,
+  and the at-risk badge. Read-only; entering marks still happens on the
+  project's own page.
+- **Simple charts, no new dependency.** The coordinator overview
+  (`/coordinator`) got two new stat cards ("Marks entered across all
+  projects", "Projects needing attention") and a small horizontal bar
+  chart breaking down every project's phase status into three bands (Not
+  started / In progress / All phases done) — hand-built with plain
+  `<div>` widths, no charting library.
+- **Downloadable award list (CSV).** One row per student, with a column
+  for every rubric component in both FYP-I and FYP-II, plus a semester
+  subtotal and a grand total column. No new npm dependency — the CSV is
+  built by hand in `src/lib/award-list-csv.ts` with proper escaping for
+  commas/quotes/newlines. Two download endpoints, both re-checking the
+  caller's role/ownership server-side rather than trusting anything the
+  client sends:
+  - **Coordinator** (`/coordinator/award-list` → `GET
+    /api/award-list/coordinator?sessionId=...`) — every project, or
+    filtered down to a single academic session via a dropdown (`sessionId`
+    defaults to `all`).
+  - **Faculty** (`/award-list` → `GET /api/award-list/faculty`) — always
+    scoped to just the caller's own supervised students; there's no filter
+    to pick, since the whole file only ever contains their own projects.
 
 ## Mobile layout & editable-field affordance
 

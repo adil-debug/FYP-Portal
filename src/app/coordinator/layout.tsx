@@ -48,6 +48,12 @@ export default async function CoordinatorLayout({
               </p>
               <p className="text-xs text-slate-500">FYP Coordinator</p>
             </div>
+            <Link
+              href="/account/change-password"
+              className="btn-outline text-sm"
+            >
+              Change password
+            </Link>
             <LogoutButton />
           </div>
         </div>

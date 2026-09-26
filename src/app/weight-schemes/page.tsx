@@ -9,6 +9,7 @@ import {
   SEMESTER_LABELS,
 } from "@/lib/rubric";
 import { DeleteSchemeButton } from "@/app/coordinator/weight-schemes/delete-scheme-button";
+import { CreateSchemeForm } from "@/app/coordinator/weight-schemes/create-scheme-form";
 
 export default async function FacultyWeightSchemesPage() {
   const user = await getCurrentUser();
@@ -42,11 +43,15 @@ export default async function FacultyWeightSchemesPage() {
         </h1>
         <p className="mt-1 text-sm text-slate-600">
           How the 100 marks in each semester are split across the 5 rubric
-          components. Only a coordinator can create new schemes or change
-          which one is the default, but you can delete a scheme here once
-          it's no longer used by any project.
+          components. You can create your own scheme here and assign it to
+          a project you supervise from that project's create/edit page —
+          only a coordinator can change which scheme is the site-wide
+          default. You can delete any scheme once it's no longer used by
+          any project.
         </p>
       </div>
+
+      <CreateSchemeForm isCoordinator={false} />
 
       <div className="flex flex-col gap-4">
         {schemes.length === 0 && (

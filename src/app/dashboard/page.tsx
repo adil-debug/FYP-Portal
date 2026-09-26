@@ -53,6 +53,12 @@ export default async function DashboardPage() {
               </p>
               <p className="text-xs text-slate-500">Faculty</p>
             </div>
+            <Link
+              href="/account/change-password"
+              className="btn-outline text-sm"
+            >
+              Change password
+            </Link>
             <LogoutButton />
           </div>
         </div>

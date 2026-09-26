@@ -12,14 +12,25 @@ function parseWeight(formData: FormData, semester: string, component: string): n
   return Number.isFinite(value) && value >= 0 ? value : 0;
 }
 
+/**
+ * Creates a weight scheme. Both a coordinator and any faculty member can
+ * call this — a faculty member may want a scheme with a different split
+ * than the coordinator's default for a project they supervise. Whatever
+ * scheme gets created is available to everyone as an option when
+ * creating/editing a project (the picker on /projects/new and
+ * /projects/[id]/edit lists every scheme, unfiltered by who created it),
+ * but only a COORDINATOR may mark a scheme as the site-wide default —
+ * that's re-checked here server-side, not just hidden in the faculty UI,
+ * since a default affects every new project across every faculty member.
+ */
 export async function createWeightScheme(
   _prevState: ActionResult,
   formData: FormData,
 ): Promise<ActionResult> {
-  const coordinator = await requireCoordinator();
+  const user = await requireUser();
 
   const name = String(formData.get("name") ?? "").trim();
-  const isDefault = formData.get("isDefault") === "on";
+  const isDefault = user.role === "COORDINATOR" && formData.get("isDefault") === "on";
 
   if (!name) {
     return { error: "Scheme name is required." };
@@ -63,13 +74,14 @@ export async function createWeightScheme(
       data: {
         name,
         isDefault,
-        createdById: coordinator.userId,
+        createdById: user.userId,
         componentWeights: { create: componentWeights },
       },
     });
   });
 
   revalidatePath("/coordinator/weight-schemes");
+  revalidatePath("/weight-schemes");
 
   if (warnings.length > 0) {
     return {
@@ -96,6 +108,7 @@ export async function setDefaultWeightScheme(schemeId: string): Promise<void> {
   ]);
 
   revalidatePath("/coordinator/weight-schemes");
+  revalidatePath("/weight-schemes");
 }
 
 /**
@@ -146,6 +159,7 @@ export async function deleteWeightScheme(
   await prisma.weightScheme.delete({ where: { id: schemeId } });
 
   revalidatePath("/coordinator/weight-schemes");
+  revalidatePath("/weight-schemes");
 
   return { success: true };
 }

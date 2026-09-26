@@ -29,7 +29,16 @@ const DEFAULT_WEIGHTS: Record<string, Record<string, number>> = {
   },
 };
 
-export function CreateSchemeForm() {
+export function CreateSchemeForm({
+  isCoordinator,
+}: {
+  // Only a coordinator can mark a scheme as the site-wide default — the
+  // checkbox is hidden rather than just disabled for faculty, since a
+  // faculty-created scheme is never eligible to become the default no
+  // matter what they check (createWeightScheme ignores it server-side
+  // for non-coordinators too).
+  isCoordinator: boolean;
+}) {
   const [state, formAction, isPending] = useActionState(
     createWeightScheme,
     initialState,
@@ -95,15 +104,17 @@ export function CreateSchemeForm() {
             className="field-input text-sm"
           />
         </div>
-        <label className="flex items-center gap-2 self-end pb-2 text-sm font-medium text-slate-700">
-          <input
-            type="checkbox"
-            name="isDefault"
-            defaultChecked
-            className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-          />
-          Set as default scheme
-        </label>
+        {isCoordinator && (
+          <label className="flex items-center gap-2 self-end pb-2 text-sm font-medium text-slate-700">
+            <input
+              type="checkbox"
+              name="isDefault"
+              defaultChecked
+              className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            Set as default scheme
+          </label>
+        )}
       </div>
 
       <div className="overflow-x-auto">

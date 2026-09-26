@@ -94,6 +94,7 @@ export default async function EditProjectPage(
         }))}
         faculty={faculty.map((f) => ({ id: f.id, label: `${f.name} (${f.email})` }))}
         isCoordinator={user.role === "COORDINATOR"}
+        cancelHref={`/projects/${project.id}`}
       />
     </div>
   );

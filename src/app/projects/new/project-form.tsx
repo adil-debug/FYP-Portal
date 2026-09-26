@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useMemo, useState } from "react";
 import { createProject, updateProject } from "@/lib/actions/projects";
 import {
@@ -36,6 +37,7 @@ export function ProjectForm({
   students,
   faculty,
   isCoordinator,
+  cancelHref,
 }: {
   mode: Mode;
   sessions: Option[];
@@ -43,6 +45,12 @@ export function ProjectForm({
   students: (Option & { rollNumber: string })[];
   faculty: Option[];
   isCoordinator: boolean;
+  // Where "Cancel" sends the user — the project's own detail page when
+  // editing, or the caller's project list when creating. Passed in by the
+  // page rather than computed here, since the two callers (new vs. edit)
+  // have different fallback destinations and only the page component
+  // knows which one applies.
+  cancelHref: string;
 }) {
   const action = mode.kind === "create" ? createProject : updateProject;
   const [state, formAction, isPending] = useActionState(action, initialState);
@@ -324,19 +332,24 @@ export function ProjectForm({
         </div>
       </div>
 
-      <button
-        type="submit"
-        disabled={isPending}
-        className="btn-solid-primary self-start text-sm"
-      >
-        {isPending
-          ? isEdit
-            ? "Saving…"
-            : "Creating…"
-          : isEdit
-            ? "Save changes"
-            : "Create project"}
-      </button>
+      <div className="flex items-center gap-2">
+        <button
+          type="submit"
+          disabled={isPending}
+          className="btn-solid-primary text-sm"
+        >
+          {isPending
+            ? isEdit
+              ? "Saving…"
+              : "Creating…"
+            : isEdit
+              ? "Save changes"
+              : "Create project"}
+        </button>
+        <Link href={cancelHref} className="btn-outline text-sm">
+          Cancel
+        </Link>
+      </div>
     </form>
   );
 }

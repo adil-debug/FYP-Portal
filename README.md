@@ -432,6 +432,61 @@ Back" link used elsewhere in the app, linking straight back to the
 project's detail page, with no change to the existing save-and-redirect
 behavior.
 
+## Post-Phase-10 fixes and additions
+
+### Project create page: back link and Cancel button
+
+`/projects/new` had the same gap as the edit page above — no way to leave
+without submitting. It now has a "&larr; Back" link (to
+`/coordinator/projects` for a coordinator, `/dashboard` for faculty) plus
+a "Cancel" button next to "Create project" that goes to the same place,
+via a new `cancelHref` prop on the shared `ProjectForm` component
+(`src/app/projects/new/project-form.tsx`) that both the create and edit
+pages set to their own appropriate destination.
+
+### Faculty can create their own weight schemes
+
+Previously only a coordinator could create a weight scheme at all (full
+CRUD was added earlier, but create was still coordinator-only). Now any
+faculty member can create their own scheme from `/weight-schemes`, using
+the same form the coordinator uses (`CreateSchemeForm`, now shared
+between `/coordinator/weight-schemes` and `/weight-schemes` via an
+`isCoordinator` prop). A faculty-created scheme:
+
+- Shows up in the weight-scheme picker on `/projects/new` and
+  `/projects/[id]/edit` for **everyone** — the picker already listed every
+  scheme unfiltered, so no change was needed there — meaning a faculty
+  member can assign their own scheme to any project they supervise (or a
+  coordinator can assign it to any project too, since scheme choice isn't
+  restricted by who created it).
+- **Cannot** be marked the site-wide default. The "Set as default scheme"
+  checkbox is hidden entirely for faculty in the UI, and
+  `createWeightScheme` (`src/lib/actions/weight-schemes.ts`) also ignores
+  `isDefault` server-side for any non-coordinator caller — so this isn't
+  just a hidden checkbox, a tampered request can't set it either. Only a
+  coordinator can change the default via `setDefaultWeightScheme`, which
+  was already coordinator-only.
+- Deletion still follows the existing full-CRUD rules (a default scheme,
+  or one still assigned to any project, can't be deleted — see the
+  "Weight Schemes" section above).
+
+### Change your own password
+
+Previously, once a coordinator set or reset a faculty member's password,
+that faculty member had no way to change it themselves — only the
+coordinator could reset it again via `/coordinator/faculty`. Both roles
+can now change their own password from **"Change password"** in the
+header (next to "Sign out"), which goes to `/account/change-password`
+(`src/lib/actions/account.ts` → `changeOwnPassword`). This requires the
+**current** password to be entered correctly first — so a session left
+open on a shared computer can't be used to lock the real account owner
+out by silently changing their password — plus a new password of at
+least 8 characters, entered twice to catch typos. This is separate from,
+and doesn't change, the coordinator's existing ability to reset a
+faculty member's password directly from `/coordinator/faculty` (e.g. if
+a faculty member forgets their password and can't log in to change it
+themselves).
+
 ## Mobile layout & editable-field affordance
 
 Two UI adjustments made alongside the CRUD work above:

@@ -32,7 +32,7 @@ export default async function WeightSchemesPage() {
         </p>
       </div>
 
-      <CreateSchemeForm />
+      <CreateSchemeForm isCoordinator />
 
       <div className="flex flex-col gap-4">
         {schemes.length === 0 && (

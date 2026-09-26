@@ -2,8 +2,9 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
 export default async function CoordinatorOverviewPage() {
-  const [facultyCount, studentCount, sessionCount, schemeCount] =
+  const [projectCount, facultyCount, studentCount, sessionCount, schemeCount] =
     await Promise.all([
+      prisma.project.count(),
       prisma.user.count({ where: { role: "FACULTY" } }),
       prisma.student.count(),
       prisma.academicSession.count(),
@@ -11,6 +12,7 @@ export default async function CoordinatorOverviewPage() {
     ]);
 
   const cards = [
+    { label: "Projects", value: projectCount, href: "/coordinator/projects" },
     { label: "Faculty accounts", value: facultyCount, href: "/coordinator/faculty" },
     { label: "Students", value: studentCount, href: "/coordinator/students" },
     { label: "Academic sessions", value: sessionCount, href: "/coordinator/sessions" },
@@ -29,7 +31,7 @@ export default async function CoordinatorOverviewPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
         {cards.map((card) => (
           <Link
             key={card.href}

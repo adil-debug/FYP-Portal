@@ -1,5 +1,8 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
+import { prisma } from "@/lib/prisma";
+import { PROJECT_TYPE_LABELS } from "@/lib/rubric";
 import { LogoutButton } from "./logout-button";
 
 export default async function DashboardPage() {
@@ -13,10 +16,19 @@ export default async function DashboardPage() {
   }
 
   // Coordinators have their own dedicated section; the rest of this page
-  // is a Faculty placeholder until Phase 9 builds the real dashboards.
+  // is the Faculty dashboard.
   if (user.role === "COORDINATOR") {
     redirect("/coordinator");
   }
+
+  const projects = await prisma.project.findMany({
+    where: { supervisorId: user.userId },
+    orderBy: { createdAt: "desc" },
+    include: {
+      members: { include: { student: true } },
+      academicSession: true,
+    },
+  });
 
   return (
     <div className="flex min-h-screen flex-1 flex-col bg-slate-50">
@@ -40,17 +52,54 @@ export default async function DashboardPage() {
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 px-6 py-12">
-        <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-indigo-600 w-fit">
-          Faculty dashboard · placeholder
-        </span>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-          You&apos;re signed in, {user.name.split(" ")[0]}.
-        </h1>
-        <p className="max-w-xl text-slate-600">
-          This is a placeholder. Your real dashboard — supervised projects,
-          marks entry, and phase tracking — is built in Phase 9.
-        </p>
+      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-6 py-10">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+              Your projects
+            </h1>
+            <p className="mt-1 text-sm text-slate-600">
+              Projects you supervise as faculty.
+            </p>
+          </div>
+          <Link
+            href="/projects/new"
+            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700"
+          >
+            + New project
+          </Link>
+        </div>
+
+        {projects.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-12 text-center text-slate-400">
+            You don&apos;t supervise any projects yet.
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {projects.map((project) => (
+              <Link
+                key={project.id}
+                href={`/projects/${project.id}`}
+                className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-colors hover:border-indigo-300"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-700">
+                    {PROJECT_TYPE_LABELS[project.type]}
+                  </span>
+                  <span className="text-xs text-slate-400">
+                    {project.academicSession.title}
+                  </span>
+                </div>
+                <h2 className="font-semibold text-slate-900">
+                  {project.title}
+                </h2>
+                <p className="text-xs text-slate-500">
+                  {project.members.map((m) => m.student.name).join(", ")}
+                </p>
+              </Link>
+            ))}
+          </div>
+        )}
       </main>
     </div>
   );

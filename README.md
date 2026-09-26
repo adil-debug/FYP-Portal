@@ -33,8 +33,8 @@ current marks across all components.
 1. **Project scaffold** — Next.js + Tailwind + GitHub + Vercel
 2. **Database setup** — Neon Postgres + Prisma schema
 3. **Authentication** — Coordinator / Faculty login &amp; route protection
-4. **Coordinator features** (this step) — create faculty &amp; student accounts, academic sessions, weight schemes
-5. Project creation & assignment
+4. **Coordinator features** — create faculty &amp; student accounts, academic sessions, weight schemes
+5. **Project creation & assignment** (this step) — faculty &amp; coordinator create projects, assign students
 6. SDLC / research phase tracking UI
 7. Marks entry (per student, per component, per semester)
 8. Email notifications on mark updates
@@ -121,8 +121,8 @@ by `proxy.ts` and by `src/app/coordinator/layout.tsx` re-checking the
 session, plus every Server Function calling `requireCoordinator()`).
 
 - **Academic Sessions** (`/coordinator/sessions`) — create cohorts like
-  "2025-2026" and toggle them active/inactive. Every project will belong to
-  one session (added in Phase 5).
+  "2025-2026" and toggle them active/inactive. Every project belongs to
+  one session.
 - **Faculty** (`/coordinator/faculty`) — create login accounts for faculty.
   The coordinator sets (or auto-generates) an initial password and shares
   it with the faculty member directly — there's no email step yet (that's
@@ -149,6 +149,41 @@ exception since they're erased at compile time. That's why the shared
 rubric constants (`COMPONENT_TYPES`, `SEMESTER_LABELS`, etc.) live in
 `src/lib/rubric.ts` instead of alongside the weight-scheme Server
 Functions — keep that split in mind if you add new shared constants later.
+
+## Project creation & assignment
+
+Two entry points, both using the same form and Server Function
+(`src/lib/actions/projects.ts` → `createProject`):
+
+- **Faculty** (`/projects/new`, reached from their `/dashboard` project list)
+  create their own projects. They are automatically the supervisor — there
+  is no field for it, and the Server Function ignores any `supervisorId`
+  a tampered request might send, always using the logged-in faculty's own
+  session instead.
+- **Coordinator** (`/projects/new`, reached from `/coordinator/projects`)
+  create a project and explicitly choose which faculty member supervises
+  it, via a supervisor dropdown that only appears for coordinators.
+
+Both paths go live immediately — there's no approval step, matching the
+requirement that faculty-created projects don't need coordinator sign-off.
+
+When a project is created:
+- Up to 3 students are attached via `ProjectMember` (the form disables
+  further checkboxes once 3 are selected; the Server Function re-validates
+  this server-side too).
+- The default weight scheme is pre-selected, but any existing scheme can
+  be chosen instead.
+- A full set of `ProjectPhaseProgress` rows is created automatically — 5
+  SDLC phases for a `SOFTWARE` project, 6 research phases for a `RESEARCH`
+  project — all starting as `NOT_STARTED`. Phase 6 builds the UI to update
+  these; for now the project detail page (`/projects/[id]`) only displays
+  them read-only.
+
+Access to a project's detail page is restricted to its supervising faculty
+member or any coordinator — enforced in the page itself (not just by
+hiding links), verified end-to-end with a second faculty account that
+gets redirected away when it tries the first faculty's project URL
+directly.
 
 ## Database commands
 

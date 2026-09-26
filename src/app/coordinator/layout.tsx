@@ -5,6 +5,7 @@ import { LogoutButton } from "@/app/dashboard/logout-button";
 
 const NAV_ITEMS = [
   { href: "/coordinator", label: "Overview" },
+  { href: "/coordinator/projects", label: "Projects" },
   { href: "/coordinator/sessions", label: "Academic Sessions" },
   { href: "/coordinator/faculty", label: "Faculty" },
   { href: "/coordinator/students", label: "Students" },

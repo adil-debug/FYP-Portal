@@ -146,13 +146,23 @@ session, plus every Server Function calling `requireCoordinator()`).
     own edit/delete, described below) if you need to remove the account.
 - **Students** (`/coordinator/students`) — add student records (name, roll
   number, email). Students never get a login; roll number must be unique.
-- **Weight Schemes** (`/coordinator/weight-schemes`) — configure how each
-  semester's 100 marks are split across the 5 rubric components. Multiple
-  schemes can exist; exactly one is marked "Default" at a time (creating or
-  promoting a new default automatically un-defaults the previous one). A
-  scheme can be saved even if a semester's weights don't sum to 100 — the
-  UI warns about it, since a coordinator may want to build it up in stages
-  before finishing.
+- **Weight Schemes** (`/coordinator/weight-schemes`, and read/delete-only
+  for faculty at `/weight-schemes`) — configure how each semester's 100
+  marks are split across the 5 rubric components. Multiple schemes can
+  exist; exactly one is marked "Default" at a time (creating or promoting
+  a new default automatically un-defaults the previous one). A scheme can
+  be saved even if a semester's weights don't sum to 100 — the UI warns
+  about it, since a coordinator may want to build it up in stages before
+  finishing.
+  - **Create** is coordinator-only, from `/coordinator/weight-schemes`.
+  - **Delete** is available to both coordinator and faculty (any logged-in
+    user), from either page. Two guards apply, both enforced server-side in
+    `deleteWeightScheme` (not just as a disabled button): the current
+    **default** scheme can't be deleted (every new project needs a default
+    to fall back to — make a different scheme the default first), and a
+    scheme still assigned to **any project** can't be deleted either
+    (reassign or delete those projects first). There's no scheme "edit"
+    yet — delete and recreate if the weights need to change.
 
 All of the create forms use React's `useActionState` with Server Functions
 (`"use server"`), so they work with progressive enhancement and don't need

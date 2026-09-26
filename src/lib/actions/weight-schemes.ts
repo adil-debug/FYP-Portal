@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireCoordinator } from "@/lib/session";
+import { requireCoordinator, requireUser } from "@/lib/session";
 import { COMPONENT_TYPES, SEMESTERS, SEMESTER_LABELS } from "@/lib/rubric";
 import type { ActionResult } from "./sessions";
 
@@ -96,4 +96,56 @@ export async function setDefaultWeightScheme(schemeId: string): Promise<void> {
   ]);
 
   revalidatePath("/coordinator/weight-schemes");
+}
+
+/**
+ * Deletes a weight scheme. Either role can call this (both a coordinator
+ * and any faculty member may need to clean up a scheme they created or
+ * one that's no longer needed), but — same defense-in-depth pattern used
+ * for deleteProject / deleteFacultyAccount — the check re-runs here
+ * server-side regardless of what the UI already disabled:
+ * - a scheme still assigned to one or more projects can't be deleted
+ *   (those projects would be left pointing at a non-existent scheme);
+ *   reassign or delete those projects first.
+ * - the current default scheme can't be deleted either, since every new
+ *   project needs a default to fall back to; make a different scheme the
+ *   default first.
+ */
+export async function deleteWeightScheme(
+  _prevState: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  await requireUser();
+
+  const schemeId = String(formData.get("schemeId") ?? "");
+  if (!schemeId) {
+    return { error: "Missing weight scheme reference." };
+  }
+
+  const existing = await prisma.weightScheme.findUnique({
+    where: { id: schemeId },
+    include: { _count: { select: { projects: true } } },
+  });
+  if (!existing) {
+    return { error: "Weight scheme not found." };
+  }
+
+  if (existing.isDefault) {
+    return {
+      error:
+        "This is the default scheme, so it can't be deleted. Make a different scheme the default first.",
+    };
+  }
+
+  if (existing._count.projects > 0) {
+    return {
+      error: `This scheme is still used by ${existing._count.projects} project(s). Reassign those projects to a different scheme first.`,
+    };
+  }
+
+  await prisma.weightScheme.delete({ where: { id: schemeId } });
+
+  revalidatePath("/coordinator/weight-schemes");
+
+  return { success: true };
 }

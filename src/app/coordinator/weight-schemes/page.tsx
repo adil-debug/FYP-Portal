@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { CreateSchemeForm } from "./create-scheme-form";
 import { SetDefaultButton } from "./set-default-button";
+import { DeleteSchemeButton } from "./delete-scheme-button";
 import {
   COMPONENT_TYPES,
   COMPONENT_LABELS,
@@ -72,10 +73,17 @@ export default async function WeightSchemesPage() {
                     scheme
                   </p>
                 </div>
-                <SetDefaultButton
-                  schemeId={scheme.id}
-                  isDefault={scheme.isDefault}
-                />
+                <div className="flex items-center gap-2">
+                  <SetDefaultButton
+                    schemeId={scheme.id}
+                    isDefault={scheme.isDefault}
+                  />
+                  <DeleteSchemeButton
+                    schemeId={scheme.id}
+                    isDefault={scheme.isDefault}
+                    projectCount={scheme._count.projects}
+                  />
+                </div>
               </div>
 
               <div className="overflow-x-auto">

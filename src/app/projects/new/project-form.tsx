@@ -27,6 +27,11 @@ type Mode =
         supervisorId: string;
         weightSchemeId: string;
         studentIds: string[];
+        // ISO "YYYY-MM-DD" strings (or null), pre-formatted for an
+        // <input type="date">'s defaultValue by the page component,
+        // since that's the only string shape that input accepts.
+        proposalDueAt: string | null;
+        proposalSubmittedAt: string | null;
       };
     };
 
@@ -212,6 +217,39 @@ export function ProjectForm({
               one first.
             </p>
           )}
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="proposalDueAt"
+            className="text-sm font-medium text-slate-700"
+          >
+            Proposal due date (optional)
+          </label>
+          <input
+            id="proposalDueAt"
+            name="proposalDueAt"
+            type="date"
+            defaultValue={isEdit ? mode.project.proposalDueAt ?? "" : ""}
+            className={fieldClass}
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="proposalSubmittedAt"
+            className="text-sm font-medium text-slate-700"
+          >
+            Proposal submitted on (optional)
+          </label>
+          <input
+            id="proposalSubmittedAt"
+            name="proposalSubmittedAt"
+            type="date"
+            defaultValue={isEdit ? mode.project.proposalSubmittedAt ?? "" : ""}
+            className={fieldClass}
+          />
         </div>
       </div>
 

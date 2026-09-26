@@ -37,13 +37,25 @@ current marks across all components.
 5. **Project creation & assignment** — faculty &amp; coordinator create projects, assign students
 6. **SDLC / research phase tracking UI** — supervisor/coordinator update phase status & notes
 7. **Marks entry** — per student, per component, per semester
-8. **Email notifications on mark updates — skipped for now.** Resend (the
-   email provider) requires verifying a domain you own before it can send
-   to real recipients; a Vercel `.vercel.app` URL doesn't qualify, since
-   Vercel owns that domain, not you. Since buying a domain isn't a cost the
-   user wants to take on right now, this phase is deliberately deferred,
-   not forgotten — it can be picked up later once a domain is available,
-   without changing anything already built.
+8. **Student notifications on mark updates — skipped for now.** Two
+   options were considered and both are deliberately deferred, not
+   forgotten, until the user is ready to do the account setup each one
+   requires:
+   - **Email (Resend)** — requires verifying a domain you own before it
+     can send to real recipients; a Vercel `.vercel.app` URL doesn't
+     qualify, since Vercel owns that domain, not you. Buying a domain
+     isn't a cost the user wants to take on right now.
+   - **WhatsApp (Meta's WhatsApp Cloud API)** — free at this class size
+     (1,000 free conversations/month), but requires a Meta Business
+     Account, a dedicated WhatsApp Business phone number, and a
+     pre-approved message template before it can message a student who
+     hasn't messaged the portal's number first. No-setup alternatives
+     (Twilio's WhatsApp sandbox, unofficial "automate your own WhatsApp
+     Web" libraries) were ruled out — the sandbox requires each student to
+     manually "join" first, and the unofficial libraries risk the sending
+     number being banned since they go against WhatsApp's own terms.
+   Either can be picked up later once the account setup is done, without
+   changing anything else already built.
 9. **Dashboards** — marks progress, at-risk flags, coordinator marks
    overview, simple charts, downloadable award lists
 10. **UI polish & deployment finalization** (this step) — consistent
@@ -82,6 +94,9 @@ The schema (`prisma/schema.prisma`) covers:
 - **PlagiarismCheck** — stores a similarity % (entered manually from an
   external tool such as Turnitin).
 - **ThesisReview** — qualitative notes backing the "thesis quality" mark.
+- **ProjectComment** — coordinator ↔ supervisor discussion thread for a
+  project; visibility is enforced in application code (see "Project
+  comments" below), not by the schema itself.
 - **Mark** — the core rubric table: one row per (project, student, semester,
   component), so group members can receive different marks for the same
   component. A unique constraint prevents duplicate marks for the same
@@ -510,6 +525,112 @@ Two UI adjustments made alongside the CRUD work above:
   are now rendered with a distinct flat grey background and a small lock
   icon, not just explanatory text underneath — so the difference between
   "editable" and "locked" is visible at a glance (`src/app/projects/new/project-form.tsx`).
+
+## Post-completion feature additions
+
+With all 10 phases complete, the following features were added on top of
+the finished app. This batch includes a schema change (the new
+`ProjectComment` model) — run `npm run db:migrate` against your Neon
+database after pulling this update, same as any other schema change.
+
+### Proposal deadline tracking
+
+The `Project` model already had `proposalDueAt` / `proposalSubmittedAt`
+fields, but nothing in the UI ever set or surfaced them. Both dates are
+now editable on the project create/edit form (optional `<input
+type="date">` fields — `src/app/projects/new/project-form.tsx`,
+`src/lib/actions/projects.ts`), and are classified into a status
+(`getProposalDeadlineStatus` in `src/lib/dates.ts`) that drives small
+badges: "Proposal overdue by N days" (red) or "Proposal due in N days"
+(amber), shown next to the project title on the faculty dashboard, the
+coordinator's all-projects list, and the individual project detail page.
+An already-submitted proposal never shows a badge, regardless of its due
+date. The coordinator overview page also gets a red "Proposal deadlines"
+summary card (only rendered when at least one project is overdue or due
+soon) linking through to the full projects list.
+
+### Printable student/project report
+
+Each project detail page now has a **"Print report"** link
+(`/projects/[id]/report`) that renders a clean, print-friendly HTML page:
+project info, supervisor, students, phase checklist, and a full marks
+breakdown per student per semester with running totals. It has no
+special PDF library — the page's own "Print / Save as PDF" button just
+calls the browser's native `window.print()`, and print-specific CSS
+(`print:` Tailwind variants) hides the on-screen chrome (back link,
+print button) and removes card borders/shadows so it prints cleanly.
+Anyone who can view a project (its supervisor or a coordinator) can view
+its report — same authorization check as the project detail page.
+
+### Project comments (coordinator ↔ supervisor)
+
+Every project detail page now has a **Comments** thread
+(`src/app/projects/[id]/comment-thread.tsx`, backed by the new
+`ProjectComment` Prisma model and `src/lib/actions/comments.ts`) for
+discussion between the coordinator and that project's supervising
+faculty member. Visibility is enforced server-side, not just hidden in
+the UI: `requireCommentAccess()` re-checks on every read and write that
+the caller is either a coordinator or the project's own supervisor —
+another faculty member (or anyone else) gets an error, not an empty
+list. Students never see this (they have no login regardless). Since the
+project detail page itself already redirects away anyone who isn't
+authorized to view the project, an unauthorized user never even reaches
+the comment thread's markup.
+
+### Academic session rollover ("Start new semester")
+
+The Academic Sessions page (`/coordinator/sessions`) has a collapsed
+**"Start new semester…"** action that, on confirmation, creates a new
+`AcademicSession` and clones the current default weight scheme's
+component weights into a new scheme named after it (e.g. "Standard
+Scheme (2026-2027)") — so the new semester starts with a sensible
+baseline instead of an empty one (`startNewSemester` in
+`src/lib/actions/sessions.ts`). It deliberately does **not** copy any
+projects or students — a new semester means new projects, created fresh
+against the new session, same as any other academic session.
+
+### Search / filter on list pages
+
+Every list page across the app now has a client-side search box above
+its table/grid, filtering by the fields visible in that list — no page
+reload, no server round-trip:
+
+- Coordinator: Projects, Students, Faculty, Marks Overview
+- Faculty dashboard's own project list (`/dashboard`)
+- Weight Schemes (both `/coordinator/weight-schemes` and
+  `/weight-schemes`), searching by scheme name or creator
+
+Each list's table/grid was pulled into its own small client component
+(e.g. `projects-table.tsx`, `students-table.tsx`,
+`marks-overview-table.tsx`) that takes the server-fetched rows as props
+and filters them in memory against the search box's value, using a
+shared `<ListSearch>` input component (`src/components/list-search.tsx`).
+
+### Weight schemes page redesign
+
+The Weight Schemes page used to render every scheme as a full table
+taking up the whole page — with several schemes, that meant a lot of
+scrolling just to find one. Both the coordinator's and faculty's Weight
+Schemes pages now use a shared `<SchemeList>` component
+(`src/app/coordinator/weight-schemes/scheme-list.tsx`) where each scheme
+is a single compact summary row (name, default badge, creator,
+project count, per-semester totals) that expands into the full
+component-by-component breakdown table only when clicked — combined
+with the search box above, this makes the page usable with any number
+of schemes.
+
+### Faculty can add students
+
+Previously only a coordinator could add student records
+(`/coordinator/students`). Faculty now have their own **Students** page
+(`/students`, linked from the dashboard header) using the same form and
+table components, so a faculty member can add a student they're about
+to supervise without waiting on the coordinator. `createStudent` accepts
+any authenticated user now, not just a coordinator
+(`src/lib/actions/students.ts`) — a student record isn't owned by
+whoever created it, so this doesn't change who can *use* a student
+(anyone can still add any student to any project they're allowed to
+edit).
 
 ## Database commands
 

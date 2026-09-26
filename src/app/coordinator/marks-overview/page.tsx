@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { PROJECT_TYPE_LABELS } from "@/lib/rubric";
 import { computeMarksProgress, isProjectAtRisk } from "@/lib/project-stats";
+import { MarksOverviewTable } from "./marks-overview-table";
 
 export default async function MarksOverviewPage() {
   const projects = await prisma.project.findMany({
@@ -33,7 +33,18 @@ export default async function MarksOverviewPage() {
     const atRisk = isProjectAtRisk({ phases: project.phases, marks: project.marks });
     const totalAwarded = project.marks.reduce((sum, m) => sum + Number(m.marksAwarded), 0);
     const totalMax = project.marks.reduce((sum, m) => sum + Number(m.maxMarks), 0);
-    return { project, progress, atRisk, totalAwarded, totalMax };
+    return {
+      id: project.id,
+      title: project.title,
+      type: project.type,
+      supervisorName: project.supervisor.name,
+      sessionTitle: project.academicSession.title,
+      marksEntered: progress.entered,
+      marksTotal: progress.total,
+      totalAwarded,
+      totalMax,
+      atRisk,
+    };
   });
 
   return (
@@ -55,68 +66,7 @@ export default async function MarksOverviewPage() {
         </Link>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-        <table className="w-full min-w-[720px] text-left text-sm">
-          <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
-            <tr>
-              <th className="px-4 py-3">Title</th>
-              <th className="px-4 py-3">Type</th>
-              <th className="px-4 py-3">Supervisor</th>
-              <th className="px-4 py-3">Session</th>
-              <th className="px-4 py-3">Marks entered</th>
-              <th className="px-4 py-3">Running total</th>
-              <th className="px-4 py-3">Status</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {rows.length === 0 && (
-              <tr>
-                <td colSpan={7} className="px-4 py-6 text-center text-slate-400">
-                  No projects yet.
-                </td>
-              </tr>
-            )}
-            {rows.map(({ project, progress, atRisk, totalAwarded, totalMax }) => (
-              <tr key={project.id} className="hover:bg-slate-50">
-                <td className="px-4 py-3">
-                  <Link
-                    href={`/projects/${project.id}`}
-                    className="font-medium text-indigo-700 hover:underline"
-                  >
-                    {project.title}
-                  </Link>
-                </td>
-                <td className="px-4 py-3 text-slate-600">
-                  {PROJECT_TYPE_LABELS[project.type]}
-                </td>
-                <td className="px-4 py-3 text-slate-600">
-                  {project.supervisor.name}
-                </td>
-                <td className="px-4 py-3 text-slate-500">
-                  {project.academicSession.title}
-                </td>
-                <td className="px-4 py-3 text-slate-600">
-                  {progress.entered} / {progress.total}
-                </td>
-                <td className="px-4 py-3 text-slate-600">
-                  {totalMax === 0 ? "—" : `${totalAwarded} / ${totalMax}`}
-                </td>
-                <td className="px-4 py-3">
-                  {atRisk ? (
-                    <span className="rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-semibold text-red-700">
-                      Needs attention
-                    </span>
-                  ) : (
-                    <span className="rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-green-700">
-                      On track
-                    </span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <MarksOverviewTable rows={rows} />
     </div>
   );
 }

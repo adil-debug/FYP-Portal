@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { PROJECT_TYPE_LABELS } from "@/lib/rubric";
+import { ProjectsTable } from "./projects-table";
 
 export default async function CoordinatorProjectsPage() {
   const projects = await prisma.project.findMany({
@@ -32,62 +32,22 @@ export default async function CoordinatorProjectsPage() {
         </Link>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-        <table className="w-full min-w-[720px] text-left text-sm">
-          <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
-            <tr>
-              <th className="px-4 py-3">Title</th>
-              <th className="px-4 py-3">Type</th>
-              <th className="px-4 py-3">Supervisor</th>
-              <th className="px-4 py-3">Students</th>
-              <th className="px-4 py-3">Session</th>
-              <th className="px-4 py-3">Progress</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {projects.length === 0 && (
-              <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-slate-400">
-                  No projects yet. Create one above.
-                </td>
-              </tr>
-            )}
-            {projects.map((project) => {
-              const completed = project.phases.filter(
-                (p) => p.status === "COMPLETED",
-              ).length;
-              const total = project.phases.length;
-              return (
-                <tr key={project.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/projects/${project.id}`}
-                      className="font-medium text-indigo-700 hover:underline"
-                    >
-                      {project.title}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">
-                    {PROJECT_TYPE_LABELS[project.type]}
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">
-                    {project.supervisor.name}
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">
-                    {project.members.map((m) => m.student.name).join(", ")}
-                  </td>
-                  <td className="px-4 py-3 text-slate-500">
-                    {project.academicSession.title}
-                  </td>
-                  <td className="px-4 py-3 text-slate-500">
-                    {completed}/{total} phases
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      <ProjectsTable
+        projects={projects.map((project) => ({
+          id: project.id,
+          title: project.title,
+          type: project.type,
+          supervisorName: project.supervisor.name,
+          studentNames: project.members.map((m) => m.student.name),
+          sessionTitle: project.academicSession.title,
+          completedPhases: project.phases.filter((p) => p.status === "COMPLETED").length,
+          totalPhases: project.phases.length,
+          proposalDueAt: project.proposalDueAt ? project.proposalDueAt.toISOString() : null,
+          proposalSubmittedAt: project.proposalSubmittedAt
+            ? project.proposalSubmittedAt.toISOString()
+            : null,
+        }))}
+      />
     </div>
   );
 }

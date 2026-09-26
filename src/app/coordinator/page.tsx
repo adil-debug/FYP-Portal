@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { computeMarksProgress, isProjectAtRisk } from "@/lib/project-stats";
+import { getProposalDeadlineStatus } from "@/lib/dates";
 
 export default async function CoordinatorOverviewPage() {
   const [projectCount, facultyCount, studentCount, sessionCount, schemeCount, projects] =
@@ -25,6 +26,8 @@ export default async function CoordinatorOverviewPage() {
             },
           },
           weightScheme: { select: { componentWeights: true } },
+          proposalDueAt: true,
+          proposalSubmittedAt: true,
         },
       }),
     ]);
@@ -40,9 +43,17 @@ export default async function CoordinatorOverviewPage() {
   let totalEntered = 0;
   let totalPossible = 0;
   let atRiskCount = 0;
+  let overdueProposalCount = 0;
+  let dueSoonProposalCount = 0;
   const phaseBandCounts = { notStarted: 0, inProgress: 0, done: 0 };
 
   for (const project of projects) {
+    const deadlineStatus = getProposalDeadlineStatus({
+      proposalDueAt: project.proposalDueAt,
+      proposalSubmittedAt: project.proposalSubmittedAt,
+    });
+    if (deadlineStatus.kind === "overdue") overdueProposalCount += 1;
+    if (deadlineStatus.kind === "due-soon") dueSoonProposalCount += 1;
     const progress = computeMarksProgress({
       studentCount: project.members.length,
       weights: project.weightScheme.componentWeights,
@@ -136,6 +147,35 @@ export default async function CoordinatorOverviewPage() {
           </p>
         </div>
       </div>
+
+      {(overdueProposalCount > 0 || dueSoonProposalCount > 0) && (
+        <Link
+          href="/coordinator/projects"
+          className="flex flex-col gap-2 rounded-xl border border-red-200 bg-red-50 p-5 shadow-sm transition-colors hover:border-red-300 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-red-700">
+              Proposal deadlines
+            </p>
+            <p className="mt-1 text-sm text-red-800">
+              {overdueProposalCount > 0 && (
+                <>
+                  {overdueProposalCount} project{overdueProposalCount === 1 ? "" : "s"} overdue
+                </>
+              )}
+              {overdueProposalCount > 0 && dueSoonProposalCount > 0 && " · "}
+              {dueSoonProposalCount > 0 && (
+                <>
+                  {dueSoonProposalCount} due soon
+                </>
+              )}
+            </p>
+          </div>
+          <p className="text-xs font-medium text-red-700">
+            View all projects &rarr;
+          </p>
+        </Link>
+      )}
 
       <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-500">

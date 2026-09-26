@@ -12,6 +12,7 @@ import {
 import { PhaseRow } from "./phase-row";
 import { DeleteProjectButton } from "./delete-project-button";
 import { MarksGrid } from "./marks-grid";
+import { CommentThread, type CommentEntry } from "./comment-thread";
 
 export default async function ProjectDetailPage(
   props: PageProps<"/projects/[id]">,
@@ -61,6 +62,27 @@ export default async function ProjectDetailPage(
     user.role === "COORDINATOR" || project.supervisorId === user.userId;
   const canEditMarks = canEditPhases; // same rule: supervisor or coordinator
 
+  // Same rule again: coordinator or this project's own supervisor. canView
+  // above already enforces this for the whole page, so every faculty
+  // member who reaches this point already qualifies — but the comments
+  // list/create actions re-check it independently anyway (defense in
+  // depth), so this fetch never has to trust the page-level check alone.
+  const comments = await prisma.projectComment.findMany({
+    where: { projectId: project.id },
+    orderBy: { createdAt: "asc" },
+    include: { author: { select: { name: true, role: true } } },
+  });
+  const commentEntries: CommentEntry[] = comments.map((c) => ({
+    id: c.id,
+    body: c.body,
+    createdAt: c.createdAt.toLocaleString("en-US", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }),
+    authorName: c.author.name,
+    authorRole: c.author.role,
+  }));
+
   const weightsBySemester: Record<string, Record<string, number>> = {};
   for (const semester of SEMESTERS) {
     weightsBySemester[semester] = {};
@@ -98,17 +120,25 @@ export default async function ProjectDetailPage(
         >
           &larr; Back
         </Link>
-        {canEditPhases && (
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href={`/projects/${project.id}/edit`}
-              className="btn-outline text-sm"
-            >
-              Edit project
-            </Link>
-            <DeleteProjectButton projectId={project.id} />
-          </div>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href={`/projects/${project.id}/report`}
+            className="btn-outline text-sm"
+          >
+            Print report
+          </Link>
+          {canEditPhases && (
+            <>
+              <Link
+                href={`/projects/${project.id}/edit`}
+                className="btn-outline text-sm"
+              >
+                Edit project
+              </Link>
+              <DeleteProjectButton projectId={project.id} />
+            </>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-col gap-2">
@@ -214,6 +244,8 @@ export default async function ProjectDetailPage(
         weightsBySemester={weightsBySemester}
         canEdit={canEditMarks}
       />
+
+      <CommentThread projectId={project.id} comments={commentEntries} />
     </div>
   );
 }

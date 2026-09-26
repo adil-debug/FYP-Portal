@@ -86,6 +86,7 @@ model User {
   createdProjects    Project[]      @relation("ProjectCreatedBy")
   weightSchemes      WeightScheme[] @relation("WeightSchemeCreatedBy")
   marksGiven         Mark[]         @relation("MarkGivenBy")
+  projectComments    ProjectComment[] @relation("ProjectCommentAuthor")
 
   @@index([role])
 }
@@ -190,6 +191,7 @@ model Project {
   marks          Mark[]
   plagiarismChecks PlagiarismCheck[]
   thesisReviews  ThesisReview[]
+  comments       ProjectComment[]
 
   @@index([academicSessionId])
   @@index([supervisorId])
@@ -274,6 +276,26 @@ model ThesisReview {
   semester  Semester
   comments  String?
   reviewedAt DateTime @default(now())
+
+  @@index([projectId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Project comments — a coordinator ↔ supervising-faculty discussion thread
+// for a project. Visibility is enforced in application code (not just
+// hidden in the UI): only the coordinator role and the project's own
+// supervisor may read or post here, never another faculty member and
+// never a student (who has no login anyway).
+// ─────────────────────────────────────────────────────────────────────────
+
+model ProjectComment {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation("ProjectCommentAuthor", fields: [authorId], references: [id])
+  body      String
+  createdAt DateTime @default(now())
 
   @@index([projectId])
 }

@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { ProjectForm } from "@/app/projects/new/project-form";
+import { toDateInputValue } from "@/lib/dates";
 
 export default async function EditProjectPage(
   props: PageProps<"/projects/[id]/edit">,
@@ -79,6 +80,8 @@ export default async function EditProjectPage(
             supervisorId: project.supervisorId,
             weightSchemeId: project.weightSchemeId,
             studentIds: project.members.map((m) => m.studentId),
+            proposalDueAt: toDateInputValue(project.proposalDueAt),
+            proposalSubmittedAt: toDateInputValue(project.proposalSubmittedAt),
           },
         }}
         sessions={sessions.map((s) => ({ id: s.id, label: s.title }))}

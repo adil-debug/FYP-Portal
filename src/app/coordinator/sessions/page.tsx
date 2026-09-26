@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { CreateSessionForm } from "./create-session-form";
 import { ToggleActiveButton } from "./toggle-active-button";
+import { StartNewSemesterForm } from "./start-new-semester-form";
 
 export default async function SessionsPage() {
   const sessions = await prisma.academicSession.findMany({
@@ -21,6 +22,8 @@ export default async function SessionsPage() {
       </div>
 
       <CreateSessionForm />
+
+      <StartNewSemesterForm />
 
       <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
         <table className="w-full min-w-[480px] text-left text-sm">

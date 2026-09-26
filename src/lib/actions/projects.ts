@@ -12,6 +12,20 @@ import {
 } from "@/lib/rubric";
 import type { ActionResult } from "./sessions";
 
+/**
+ * Parses an optional <input type="date"> value ("YYYY-MM-DD") into a
+ * Date, or null if left blank. Returns undefined (distinct from null) for
+ * an invalid/unparseable value, so callers can tell "cleared" apart from
+ * "malformed" without a separate error type.
+ */
+function parseOptionalDate(formData: FormData, field: string): Date | null | undefined {
+  const raw = formData.get(field);
+  if (raw === null || raw === "") return null;
+  const value = new Date(String(raw));
+  if (Number.isNaN(value.getTime())) return undefined;
+  return value;
+}
+
 export async function createProject(
   _prevState: ActionResult,
   formData: FormData,
@@ -24,6 +38,8 @@ export async function createProject(
   const academicSessionId = String(formData.get("academicSessionId") ?? "");
   const weightSchemeId = String(formData.get("weightSchemeId") ?? "");
   const studentIds = formData.getAll("studentIds").map(String).filter(Boolean);
+  const proposalDueAt = parseOptionalDate(formData, "proposalDueAt");
+  const proposalSubmittedAt = parseOptionalDate(formData, "proposalSubmittedAt");
 
   // Coordinators pick a supervisor explicitly; faculty are always their
   // own supervisor (a faculty account can't assign a project to someone
@@ -58,6 +74,9 @@ export async function createProject(
   if (new Set(studentIds).size !== studentIds.length) {
     return { error: "The same student was selected more than once." };
   }
+  if (proposalDueAt === undefined || proposalSubmittedAt === undefined) {
+    return { error: "One of the proposal dates isn't a valid date." };
+  }
 
   // Defense in depth: re-verify the chosen supervisor really is a faculty
   // account, since a coordinator's browser could in theory submit any id.
@@ -86,6 +105,8 @@ export async function createProject(
         supervisorId,
         createdById: user.userId,
         weightSchemeId,
+        proposalDueAt,
+        proposalSubmittedAt,
         members: {
           create: studentIds.map((studentId) => ({ studentId })),
         },
@@ -139,6 +160,8 @@ export async function updateProject(
   const description = String(formData.get("description") ?? "").trim();
   const weightSchemeId = String(formData.get("weightSchemeId") ?? "");
   const studentIds = formData.getAll("studentIds").map(String).filter(Boolean);
+  const proposalDueAt = parseOptionalDate(formData, "proposalDueAt");
+  const proposalSubmittedAt = parseOptionalDate(formData, "proposalSubmittedAt");
 
   if (!title) {
     return { error: "Project title is required." };
@@ -154,6 +177,9 @@ export async function updateProject(
   }
   if (new Set(studentIds).size !== studentIds.length) {
     return { error: "The same student was selected more than once." };
+  }
+  if (proposalDueAt === undefined || proposalSubmittedAt === undefined) {
+    return { error: "One of the proposal dates isn't a valid date." };
   }
 
   // Only a coordinator may move a project to a different supervisor or
@@ -192,6 +218,8 @@ export async function updateProject(
           weightSchemeId,
           academicSessionId,
           supervisorId,
+          proposalDueAt,
+          proposalSubmittedAt,
           members: { create: studentIds.map((studentId) => ({ studentId })) },
         },
       }),

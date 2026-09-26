@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { CreateFacultyForm } from "./create-faculty-form";
+import { FacultyTable } from "./faculty-table";
 
 export default async function FacultyPage() {
   const faculty = await prisma.user.findMany({
@@ -23,50 +23,15 @@ export default async function FacultyPage() {
 
       <CreateFacultyForm />
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-        <table className="w-full min-w-[640px] text-left text-sm">
-          <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
-            <tr>
-              <th className="px-4 py-3">Name</th>
-              <th className="px-4 py-3">Email</th>
-              <th className="px-4 py-3">Supervised projects</th>
-              <th className="px-4 py-3">Created</th>
-              <th className="px-4 py-3"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {faculty.length === 0 && (
-              <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-slate-400">
-                  No faculty accounts yet. Create one above.
-                </td>
-              </tr>
-            )}
-            {faculty.map((member) => (
-              <tr key={member.id}>
-                <td className="px-4 py-3 font-medium text-slate-900">
-                  {member.name}
-                </td>
-                <td className="px-4 py-3 text-slate-600">{member.email}</td>
-                <td className="px-4 py-3 text-slate-600">
-                  {member._count.supervisedProjects}
-                </td>
-                <td className="px-4 py-3 text-slate-500">
-                  {member.createdAt.toLocaleDateString()}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <Link
-                    href={`/coordinator/faculty/${member.id}`}
-                    className="font-medium text-indigo-700 hover:underline"
-                  >
-                    Edit
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <FacultyTable
+        faculty={faculty.map((member) => ({
+          id: member.id,
+          name: member.name,
+          email: member.email,
+          supervisedCount: member._count.supervisedProjects,
+          createdAtLabel: member.createdAt.toLocaleDateString(),
+        }))}
+      />
     </div>
   );
 }

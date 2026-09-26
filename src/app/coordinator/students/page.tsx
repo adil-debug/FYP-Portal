@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { CreateStudentForm } from "./create-student-form";
+import { StudentsTable } from "./students-table";
 
 export default async function StudentsPage() {
   const students = await prisma.student.findMany({
@@ -21,41 +22,15 @@ export default async function StudentsPage() {
 
       <CreateStudentForm />
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-        <table className="w-full min-w-[560px] text-left text-sm">
-          <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
-            <tr>
-              <th className="px-4 py-3">Name</th>
-              <th className="px-4 py-3">Roll number</th>
-              <th className="px-4 py-3">Email</th>
-              <th className="px-4 py-3">Projects</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {students.length === 0 && (
-              <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-slate-400">
-                  No students yet. Add one above.
-                </td>
-              </tr>
-            )}
-            {students.map((student) => (
-              <tr key={student.id}>
-                <td className="px-4 py-3 font-medium text-slate-900">
-                  {student.name}
-                </td>
-                <td className="px-4 py-3 text-slate-600">
-                  {student.rollNumber}
-                </td>
-                <td className="px-4 py-3 text-slate-600">{student.email}</td>
-                <td className="px-4 py-3 text-slate-600">
-                  {student._count.memberships}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <StudentsTable
+        students={students.map((s) => ({
+          id: s.id,
+          name: s.name,
+          rollNumber: s.rollNumber,
+          email: s.email,
+          projectCount: s._count.memberships,
+        }))}
+      />
     </div>
   );
 }

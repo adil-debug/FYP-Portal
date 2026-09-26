@@ -1,17 +1,54 @@
 // Small date helpers shared between the project form (populating an
-// <input type="date">'s defaultValue) and the proposal-deadline badges
-// (dashboard, project lists). Kept in a plain module (no "use server",
-// no React) so both server components and client components can import
-// it directly.
+// <input type="date">'s defaultValue), the proposal-deadline badges
+// (dashboard, project lists), and every "created at" / "updated at" /
+// "posted at" display timestamp across the app. Kept in a plain module
+// (no "use server", no React) so both server components and client
+// components can import it directly.
+
+// Every user of this portal is in Pakistan, so all *display* timestamps
+// are rendered in Pakistan Time regardless of what timezone the server
+// process itself runs in (Vercel's Node runtime defaults to UTC, which is
+// why timestamps looked "wrong" before this was added — they were
+// correct in UTC, just not in the reader's local time). Storage is
+// unaffected: Postgres/Prisma DateTime columns stay UTC under the hood,
+// this only controls how a Date is turned into text for display.
+const DISPLAY_TIME_ZONE = "Asia/Karachi";
 
 /**
- * Formats a Date as "YYYY-MM-DD" in UTC, the exact string shape an
- * <input type="date"> needs for its defaultValue/value. Returns null for
- * a null input so callers can pass a nullable DB field straight through.
+ * Formats a Date as "YYYY-MM-DD" in Pakistan Time, the exact string shape
+ * an <input type="date"> needs for its defaultValue/value. Returns null
+ * for a null input so callers can pass a nullable DB field straight
+ * through. Uses Pakistan Time (not UTC) so a date picked near midnight
+ * doesn't silently shift to the previous/next day for a Pakistan-based
+ * user.
  */
 export function toDateInputValue(date: Date | null): string | null {
   if (!date) return null;
-  return date.toISOString().slice(0, 10);
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: DISPLAY_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const lookup = Object.fromEntries(parts.map((p) => [p.type, p.value]));
+  return `${lookup.year}-${lookup.month}-${lookup.day}`;
+}
+
+/** Formats a Date as e.g. "Sep 26, 2026" in Pakistan Time. */
+export function formatDate(date: Date): string {
+  return date.toLocaleDateString("en-US", {
+    dateStyle: "medium",
+    timeZone: DISPLAY_TIME_ZONE,
+  });
+}
+
+/** Formats a Date as e.g. "Sep 26, 2026, 4:38 PM" in Pakistan Time. */
+export function formatDateTime(date: Date): string {
+  return date.toLocaleString("en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: DISPLAY_TIME_ZONE,
+  });
 }
 
 export type ProposalDeadlineStatus =

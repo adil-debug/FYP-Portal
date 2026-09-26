@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { CreateSessionForm } from "./create-session-form";
 import { ToggleActiveButton } from "./toggle-active-button";
 import { StartNewSemesterForm } from "./start-new-semester-form";
+import { formatDate } from "@/lib/dates";
 
 export default async function SessionsPage() {
   const sessions = await prisma.academicSession.findMany({
@@ -58,7 +59,7 @@ export default async function SessionsPage() {
                   {session._count.projects}
                 </td>
                 <td className="px-4 py-3 text-slate-500">
-                  {session.createdAt.toLocaleDateString()}
+                  {formatDate(session.createdAt)}
                 </td>
               </tr>
             ))}

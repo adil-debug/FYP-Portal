@@ -3,6 +3,7 @@
 import { useActionState, useRef } from "react";
 import { createProjectComment } from "@/lib/actions/comments";
 import type { ActionResult } from "@/lib/actions/sessions";
+import { DeleteCommentButton } from "./delete-comment-button";
 
 const initialState: ActionResult = {};
 
@@ -10,6 +11,7 @@ export type CommentEntry = {
   id: string;
   body: string;
   createdAt: string;
+  authorId: string;
   authorName: string;
   authorRole: "COORDINATOR" | "FACULTY";
 };
@@ -25,9 +27,17 @@ export type CommentEntry = {
 export function CommentThread({
   projectId,
   comments,
+  currentUserId,
+  isCoordinator,
 }: {
   projectId: string;
   comments: CommentEntry[];
+  // Who's viewing, so we know which comments' "Delete" link to show —
+  // their own, or (for a coordinator) any comment. The server action
+  // re-checks this independently, so getting this wrong here would only
+  // hide/show a button, never actually change who can delete what.
+  currentUserId: string;
+  isCoordinator: boolean;
 }) {
   const [state, formAction, isPending] = useActionState(
     createProjectComment,
@@ -50,24 +60,28 @@ export function CommentThread({
             No comments yet.
           </li>
         )}
-        {comments.map((comment) => (
-          <li key={comment.id} className="px-4 py-3">
-            <div className="flex items-baseline justify-between gap-2">
-              <span className="text-sm font-medium text-slate-900">
-                {comment.authorName}{" "}
-                <span className="text-xs font-normal text-slate-400">
-                  ({comment.authorRole === "COORDINATOR" ? "Coordinator" : "Faculty"})
+        {comments.map((comment) => {
+          const canDelete = isCoordinator || comment.authorId === currentUserId;
+          return (
+            <li key={comment.id} className="px-4 py-3">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-sm font-medium text-slate-900">
+                  {comment.authorName}{" "}
+                  <span className="text-xs font-normal text-slate-400">
+                    ({comment.authorRole === "COORDINATOR" ? "Coordinator" : "Faculty"})
+                  </span>
                 </span>
-              </span>
-              <span className="whitespace-nowrap text-xs text-slate-400">
-                {comment.createdAt}
-              </span>
-            </div>
-            <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">
-              {comment.body}
-            </p>
-          </li>
-        ))}
+                <span className="flex shrink-0 items-center gap-2 whitespace-nowrap text-xs text-slate-400">
+                  {comment.createdAt}
+                  {canDelete && <DeleteCommentButton commentId={comment.id} />}
+                </span>
+              </div>
+              <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">
+                {comment.body}
+              </p>
+            </li>
+          );
+        })}
       </ul>
 
       <form

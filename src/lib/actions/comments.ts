@@ -63,3 +63,44 @@ export async function createProjectComment(
   revalidatePath(`/projects/${projectId}`);
   return { success: true };
 }
+
+/**
+ * Deletes a project comment. Allowed for whoever wrote the comment (they
+ * can retract their own post) or a coordinator (moderation) — re-checked
+ * here server-side regardless of what the UI already hides, same
+ * defense-in-depth pattern as every other delete action in this app.
+ * Another faculty member (even the project's own supervisor, if they
+ * didn't write the comment) cannot delete someone else's comment.
+ */
+export async function deleteProjectComment(
+  _prevState: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  const commentId = String(formData.get("commentId") ?? "");
+  if (!commentId) {
+    return { error: "Missing comment reference." };
+  }
+
+  const comment = await prisma.projectComment.findUnique({
+    where: { id: commentId },
+  });
+  if (!comment) {
+    return { error: "Comment not found." };
+  }
+
+  // requireCommentAccess also confirms the caller may see this project's
+  // comments at all (coordinator or the project's supervisor); we still
+  // need the extra author check below since a supervisor who didn't
+  // write this particular comment shouldn't be able to delete it.
+  const user = await requireCommentAccess(comment.projectId);
+
+  const canDelete = user.role === "COORDINATOR" || comment.authorId === user.userId;
+  if (!canDelete) {
+    return { error: "You can only delete your own comments." };
+  }
+
+  await prisma.projectComment.delete({ where: { id: commentId } });
+
+  revalidatePath(`/projects/${comment.projectId}`);
+  return { success: true };
+}

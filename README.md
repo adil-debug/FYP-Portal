@@ -577,6 +577,13 @@ project detail page itself already redirects away anyone who isn't
 authorized to view the project, an unauthorized user never even reaches
 the comment thread's markup.
 
+A comment can be deleted by whoever wrote it, or by a coordinator
+(moderation) — `deleteProjectComment` re-checks this server-side, so a
+faculty member (even the project's own supervisor) can't delete another
+person's comment, only their own. The "Delete" link next to a comment
+only renders for someone allowed to use it, but that's a convenience —
+the real check is in the action.
+
 ### Academic session rollover ("Start new semester")
 
 The Academic Sessions page (`/coordinator/sessions`) has a collapsed

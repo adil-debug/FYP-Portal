@@ -13,6 +13,7 @@ import { PhaseRow } from "./phase-row";
 import { DeleteProjectButton } from "./delete-project-button";
 import { MarksGrid } from "./marks-grid";
 import { CommentThread, type CommentEntry } from "./comment-thread";
+import { formatDateTime } from "@/lib/dates";
 
 export default async function ProjectDetailPage(
   props: PageProps<"/projects/[id]">,
@@ -75,10 +76,8 @@ export default async function ProjectDetailPage(
   const commentEntries: CommentEntry[] = comments.map((c) => ({
     id: c.id,
     body: c.body,
-    createdAt: c.createdAt.toLocaleString("en-US", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    }),
+    createdAt: formatDateTime(c.createdAt),
+    authorId: c.authorId,
     authorName: c.author.name,
     authorRole: c.author.role,
   }));
@@ -222,10 +221,7 @@ export default async function ProjectDetailPage(
                 label={phaseLabels[key as keyof typeof phaseLabels] ?? key}
                 status={phase.status}
                 notes={phase.notes}
-                updatedAt={phase.updatedAt.toLocaleString("en-US", {
-                  dateStyle: "medium",
-                  timeStyle: "short",
-                })}
+                updatedAt={formatDateTime(phase.updatedAt)}
                 canEdit={canEditPhases}
               />
             );
@@ -245,7 +241,12 @@ export default async function ProjectDetailPage(
         canEdit={canEditMarks}
       />
 
-      <CommentThread projectId={project.id} comments={commentEntries} />
+      <CommentThread
+        projectId={project.id}
+        comments={commentEntries}
+        currentUserId={user.userId}
+        isCoordinator={user.role === "COORDINATOR"}
+      />
     </div>
   );
 }

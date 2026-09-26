@@ -11,7 +11,7 @@ import {
   COMPONENT_TYPES,
   COMPONENT_LABELS,
 } from "@/lib/rubric";
-import { getProposalDeadlineStatus } from "@/lib/dates";
+import { getProposalDeadlineStatus, formatDate } from "@/lib/dates";
 import { PrintButton } from "./print-button";
 
 export default async function ProjectReportPage(
@@ -83,9 +83,7 @@ export default async function ProjectReportPage(
     return w ? Number(w.maxMarks) : 0;
   };
 
-  const today = new Date().toLocaleDateString("en-US", {
-    dateStyle: "medium",
-  });
+  const today = formatDate(new Date());
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-8 sm:px-6 sm:py-10 print:px-0 print:py-0">
@@ -141,14 +139,14 @@ export default async function ProjectReportPage(
             {project.proposalDueAt && (
               <span>
                 Proposal due:{" "}
-                {project.proposalDueAt.toLocaleDateString("en-US", { dateStyle: "medium" })}
+                {formatDate(project.proposalDueAt)}
               </span>
             )}
             {project.proposalDueAt && project.proposalSubmittedAt && " · "}
             {project.proposalSubmittedAt && (
               <span>
                 Submitted:{" "}
-                {project.proposalSubmittedAt.toLocaleDateString("en-US", { dateStyle: "medium" })}
+                {formatDate(project.proposalSubmittedAt)}
               </span>
             )}
             {deadlineStatus.kind === "overdue" && (

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { CreateFacultyForm } from "./create-faculty-form";
 import { FacultyTable } from "./faculty-table";
+import { formatDate } from "@/lib/dates";
 
 export default async function FacultyPage() {
   const faculty = await prisma.user.findMany({
@@ -29,7 +30,7 @@ export default async function FacultyPage() {
           name: member.name,
           email: member.email,
           supervisedCount: member._count.supervisedProjects,
-          createdAtLabel: member.createdAt.toLocaleDateString(),
+          createdAtLabel: formatDate(member.createdAt),
         }))}
       />
     </div>

@@ -112,7 +112,11 @@ email notifications). How it works:
 
 - **Passwords** are hashed with `bcryptjs` before being stored (`User.passwordHash`).
 - **Sessions** are a signed JWT (via `jose`) stored in an `httpOnly`,
-  `sameSite=lax` cookie named `portal_session`, valid for 7 days.
+  `sameSite=lax` cookie named `portal_session`, valid for 1 hour from
+  login (`SESSION_DURATION_SECONDS` in `src/lib/auth.ts`) — a fixed
+  expiry, not a sliding/inactivity-based one, so an account is signed out
+  exactly 1 hour after logging in even if it was active the whole time,
+  and needs to log in again.
 - **`proxy.ts`** (Next.js 16's replacement for `middleware.ts`) checks every
   request except `/login` and `/api/*` routes, redirecting to `/login` if
   there's no valid session, and further restricting any `/coordinator/*`

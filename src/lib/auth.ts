@@ -3,7 +3,10 @@ import { SignJWT, jwtVerify } from "jose";
 import type { Role } from "@/generated/prisma/client";
 
 const SESSION_COOKIE_NAME = "portal_session";
-const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 7; // 7 days
+// Fixed expiry from the moment of login — not sliding/inactivity-based.
+// A session created at login is dead exactly 1 hour later regardless of
+// activity, and the user is redirected to /login to sign in again.
+const SESSION_DURATION_SECONDS = 60 * 60; // 1 hour
 
 function getSessionSecretKey() {
   const secret = process.env.SESSION_SECRET;

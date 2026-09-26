@@ -20,7 +20,7 @@ export default async function MarksOverviewPage() {
           maxMarks: true,
         },
       },
-      weightScheme: { select: { componentWeights: true } },
+      weightScheme: { select: { componentWeights: true, weeklyMeetingWeeks: true } },
     },
   });
 
@@ -29,6 +29,8 @@ export default async function MarksOverviewPage() {
       studentCount: project.members.length,
       weights: project.weightScheme.componentWeights,
       marks: project.marks,
+      weeklyMeetingWeeks: project.weightScheme.weeklyMeetingWeeks,
+      projectType: project.type,
     });
     const atRisk = isProjectAtRisk({ phases: project.phases, marks: project.marks });
     const totalAwarded = project.marks.reduce((sum, m) => sum + Number(m.marksAwarded), 0);

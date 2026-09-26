@@ -66,6 +66,7 @@ export async function startNewSemester(
         data: {
           name: `${defaultScheme.name} (${title})`,
           isDefault: false,
+          weeklyMeetingWeeks: defaultScheme.weeklyMeetingWeeks,
           createdById: user.userId,
           componentWeights: {
             create: defaultScheme.componentWeights.map((w) => ({

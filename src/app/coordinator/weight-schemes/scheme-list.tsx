@@ -17,6 +17,7 @@ export type SchemeRow = {
   isDefault: boolean;
   createdByName: string;
   projectCount: number;
+  weeklyMeetingWeeks: number;
   weights: { semester: string; componentType: string; maxMarks: number }[];
 };
 
@@ -118,6 +119,7 @@ export function SchemeList({
                     <p className="text-xs text-slate-500">
                       Created by {scheme.createdByName} &middot;{" "}
                       {scheme.projectCount} project{scheme.projectCount === 1 ? "" : "s"} &middot;{" "}
+                      {scheme.weeklyMeetingWeeks} weeks of meetings &middot;{" "}
                       {SEMESTERS.map((s) => `${SEMESTER_LABELS[s]}: ${totals[s]}/100`).join(" · ")}
                     </p>
                   </div>

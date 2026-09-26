@@ -639,6 +639,76 @@ whoever created it, so this doesn't change who can *use* a student
 (anyone can still add any student to any project they're allowed to
 edit).
 
+### Timestamps shown in Pakistan Time
+
+Every displayed date/time (comment timestamps, phase "last updated",
+proposal due/submitted dates, print-report generation date, faculty/session
+"created" dates) is now formatted with an explicit `Asia/Karachi` timezone
+via `formatDate`/`formatDateTime` helpers in `src/lib/dates.ts`, instead of
+relying on the server's local timezone (Vercel's Node runtime defaults to
+UTC, which was showing every timestamp several hours off for users in
+Pakistan). Storage is unaffected — every `DateTime` column stays UTC in the
+database; only the display formatting changed.
+
+### Deleting a comment
+
+Either the comment's own author or a coordinator can delete a project
+comment/thread entry — not just the author, and not just the coordinator.
+`deleteProjectComment` (`src/lib/actions/comments.ts`) re-checks this
+server-side regardless of what the UI shows, and the "Delete" link only
+appears next to a comment when the current viewer is allowed to remove it
+(`src/app/projects/[id]/comment-thread.tsx`,
+`delete-comment-button.tsx`).
+
+### Multi-week / multi-phase marks
+
+Previously the **Weekly meetings** and **SDLC / research phase completion**
+components each had a single mark entry per student per semester, with no
+way to record that a project had multiple weekly meetings or that a
+component is really several distinct sub-phases. Both are now split into
+several per-unit entries:
+
+- **Weekly meetings** — a weight scheme now has a
+  `weeklyMeetingWeeks` setting (default 14, editable when creating a
+  scheme in `/coordinator/weight-schemes`), and the component's configured
+  max marks for a semester are divided evenly across that many weeks
+  (Week 1, Week 2, …). Faculty mark each week separately as the semester
+  progresses instead of entering one lump number at the end.
+- **SDLC / research phase completion** — each SDLC phase (Requirements,
+  Design, Implementation, Testing, Deployment/Maintenance) or, for
+  research projects, each of the 7 research phases (Problem Definition,
+  EDA, Data Engineering & Preprocessing, Experimental Setup & Model
+  Design, Training/Optimization/Iterative Testing, Validation & Results
+  Synthesis, Thesis Writing) now gets its own mark, again as an even
+  share of the component's configured semester max. This reuses the same
+  phase list faculty already track completion against, so the phases you
+  can mark are always exactly the phases you can check off.
+
+Schema-wise, `Mark` gained `weekNumber` and `phaseKey` columns (both
+default to a "not applicable" sentinel — `0` and `""` — for every other,
+still-single-entry component: Timely proposal submission, Plagiarism,
+Thesis quality), and its unique constraint now includes both columns so a
+project can hold one row per (student, semester, component, week/phase)
+instead of one row per (student, semester, component). The `ResearchPhase`
+enum was also replaced with the 7-phase list above (it previously listed
+Literature Review / Data Collection / Methodology / Analysis).
+
+The marks grid (`/projects/[id]`) shows Weekly meetings and SDLC/research
+phase as an expandable cell — a summary line ("N/M entered", running
+total) that opens into a per-week or per-phase list to enter or edit each
+one individually. The award-list CSV downloads and the printable project
+report both sum all of a component's per-week/per-phase marks into that
+component's single column/total, and the report always shows the full
+configured max for a component (not just the sum of whichever
+weeks/phases have been entered so far), so a partially-marked component
+doesn't display as if it were complete.
+
+**This is a schema migration** — run `npm run db:migrate` (which also
+regenerates the Prisma Client) against your real database after pulling
+this change, the same way you did for previous feature batches. If you
+still get a "Property does not exist on type 'PrismaClient'" build error
+afterwards, run `npm run db:generate` again.
+
 ## Database commands
 
 ```bash

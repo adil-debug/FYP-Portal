@@ -30,7 +30,7 @@ export default async function ProjectDetailPage(
       members: { include: { student: true } },
       academicSession: true,
       supervisor: { select: { id: true, name: true, email: true } },
-      weightScheme: { include: { componentWeights: true } },
+      weightScheme: { include: { componentWeights: true } }, // includes weeklyMeetingWeeks
       phases: true,
       marks: true,
       _count: { select: { marks: true } },
@@ -95,6 +95,11 @@ export default async function ProjectDetailPage(
     }
   }
 
+  // Keyed by "<studentId>_<componentType>_<weekNumber>_<phaseKey>" — the
+  // same parts that make up the Mark row's unique constraint, so a
+  // WEEKLY_MEETINGS/SDLC_PHASE component naturally gets one entry per
+  // week/phase, while every other component gets a single entry with
+  // weekNumber=0, phaseKey="".
   const marksBySemester: Record<
     string,
     Record<string, { marksAwarded: number; maxMarks: number; remarks: string | null }>
@@ -103,7 +108,8 @@ export default async function ProjectDetailPage(
     marksBySemester[semester] = {};
   }
   for (const mark of project.marks) {
-    marksBySemester[mark.semester][`${mark.studentId}_${mark.componentType}`] = {
+    const key = `${mark.studentId}_${mark.componentType}_${mark.weekNumber}_${mark.phaseKey}`;
+    marksBySemester[mark.semester][key] = {
       marksAwarded: Number(mark.marksAwarded),
       maxMarks: Number(mark.maxMarks),
       remarks: mark.remarks,
@@ -238,6 +244,8 @@ export default async function ProjectDetailPage(
         }))}
         marksBySemester={marksBySemester}
         weightsBySemester={weightsBySemester}
+        weeklyMeetingWeeks={project.weightScheme.weeklyMeetingWeeks}
+        projectType={project.type}
         canEdit={canEditMarks}
       />
 

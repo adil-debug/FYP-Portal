@@ -14,6 +14,7 @@ export default async function CoordinatorOverviewPage() {
       prisma.project.findMany({
         select: {
           id: true,
+          type: true,
           phases: { select: { status: true } },
           members: { select: { studentId: true } },
           marks: {
@@ -25,7 +26,7 @@ export default async function CoordinatorOverviewPage() {
               maxMarks: true,
             },
           },
-          weightScheme: { select: { componentWeights: true } },
+          weightScheme: { select: { componentWeights: true, weeklyMeetingWeeks: true } },
           proposalDueAt: true,
           proposalSubmittedAt: true,
         },
@@ -58,6 +59,8 @@ export default async function CoordinatorOverviewPage() {
       studentCount: project.members.length,
       weights: project.weightScheme.componentWeights,
       marks: project.marks,
+      weeklyMeetingWeeks: project.weightScheme.weeklyMeetingWeeks,
+      projectType: project.type,
     });
     totalEntered += progress.entered;
     totalPossible += progress.total;

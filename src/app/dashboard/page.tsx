@@ -30,7 +30,7 @@ export default async function DashboardPage() {
       academicSession: true,
       phases: { select: { status: true } },
       marks: { select: { studentId: true, semester: true, componentType: true, marksAwarded: true, maxMarks: true } },
-      weightScheme: { select: { componentWeights: true } },
+      weightScheme: { select: { componentWeights: true, weeklyMeetingWeeks: true } },
     },
   });
 
@@ -112,6 +112,8 @@ export default async function DashboardPage() {
               studentCount: project.members.length,
               weights: project.weightScheme.componentWeights,
               marks: project.marks,
+              weeklyMeetingWeeks: project.weightScheme.weeklyMeetingWeeks,
+              projectType: project.type,
             });
             const atRisk = isProjectAtRisk({
               phases: project.phases,

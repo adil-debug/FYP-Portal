@@ -3,7 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireCoordinator, requireUser } from "@/lib/session";
-import { COMPONENT_TYPES, SEMESTERS, SEMESTER_LABELS } from "@/lib/rubric";
+import {
+  COMPONENT_TYPES,
+  SEMESTERS,
+  SEMESTER_LABELS,
+  DEFAULT_WEEKLY_MEETING_WEEKS,
+} from "@/lib/rubric";
 import type { ActionResult } from "./sessions";
 
 function parseWeight(formData: FormData, semester: string, component: string): number {
@@ -31,6 +36,11 @@ export async function createWeightScheme(
 
   const name = String(formData.get("name") ?? "").trim();
   const isDefault = user.role === "COORDINATOR" && formData.get("isDefault") === "on";
+  const weeklyMeetingWeeksRaw = Number(formData.get("weeklyMeetingWeeks"));
+  const weeklyMeetingWeeks =
+    Number.isFinite(weeklyMeetingWeeksRaw) && weeklyMeetingWeeksRaw > 0
+      ? Math.floor(weeklyMeetingWeeksRaw)
+      : DEFAULT_WEEKLY_MEETING_WEEKS;
 
   if (!name) {
     return { error: "Scheme name is required." };
@@ -74,6 +84,7 @@ export async function createWeightScheme(
       data: {
         name,
         isDefault,
+        weeklyMeetingWeeks,
         createdById: user.userId,
         componentWeights: { create: componentWeights },
       },

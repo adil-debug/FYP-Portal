@@ -70,9 +70,13 @@ export default async function ProjectReportPage(
   for (const mark of project.marks) {
     const bySemester = marksByStudent.get(mark.studentId);
     if (!bySemester) continue;
+    // A component can have several Mark rows now (one per week for
+    // WEEKLY_MEETINGS, one per phase for SDLC_PHASE), so accumulate into
+    // the component's single report row rather than overwriting.
+    const existing = bySemester[mark.semester][mark.componentType];
     bySemester[mark.semester][mark.componentType] = {
-      marksAwarded: Number(mark.marksAwarded),
-      maxMarks: Number(mark.maxMarks),
+      marksAwarded: (existing?.marksAwarded ?? 0) + Number(mark.marksAwarded),
+      maxMarks: (existing?.maxMarks ?? 0) + Number(mark.maxMarks),
     };
   }
 
@@ -218,12 +222,16 @@ export default async function ProjectReportPage(
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {COMPONENT_TYPES.map((component) => {
+                          // Always the component's full configured max
+                          // (all weeks/phases), not just the ones marked
+                          // so far — so a partially-marked component
+                          // (e.g. 3 of 14 weeks) doesn't look complete.
                           const maxMarks = weightFor(semester, component);
                           if (maxMarks <= 0) return null;
                           const entry = bySemester[semester][component];
+                          semesterMax += maxMarks;
                           if (entry) {
                             semesterEntered += entry.marksAwarded;
-                            semesterMax += entry.maxMarks;
                           }
                           return (
                             <tr key={component}>
@@ -234,7 +242,7 @@ export default async function ProjectReportPage(
                                 {entry ? entry.marksAwarded : "—"}
                               </td>
                               <td className="py-1.5 text-slate-500">
-                                {entry ? entry.maxMarks : maxMarks}
+                                {maxMarks}
                               </td>
                             </tr>
                           );

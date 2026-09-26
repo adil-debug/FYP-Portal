@@ -4,7 +4,7 @@
 // server components and the CSV export logic can reuse the exact same
 // rules without drifting apart.
 
-import { COMPONENT_TYPES, SEMESTERS } from "@/lib/rubric";
+import { COMPONENT_TYPES, SEMESTERS, PROJECT_TYPES, getPhasesForType } from "@/lib/rubric";
 
 // Prisma's Decimal type (and its string/number serializations) all expose
 // a working `.toString()`, which is all Number(...) needs below — so these
@@ -29,17 +29,25 @@ export type MinimalMark = {
 };
 
 /**
- * How many (student, semester, component) mark "slots" a project has in
- * total (only counting components the weight scheme actually allocates
- * marks to for that semester), and how many of those slots have a Mark
- * row entered so far.
+ * How many (student, semester, component[, week/phase]) mark "slots" a
+ * project has in total (only counting components the weight scheme
+ * actually allocates marks to for that semester), and how many of those
+ * slots have a Mark row entered so far.
+ *
+ * WEEKLY_MEETINGS and SDLC_PHASE each expand into multiple slots per
+ * (semester, component) — one per week (weeklyMeetingWeeks) or per phase
+ * of the project's type (5 SDLC phases, 7 research phases) — since a Mark
+ * row now exists per week/phase rather than one lump mark for the whole
+ * component.
  */
 export function computeMarksProgress(params: {
   studentCount: number;
   weights: MinimalWeight[];
   marks: MinimalMark[];
+  weeklyMeetingWeeks: number;
+  projectType: (typeof PROJECT_TYPES)[number];
 }): { entered: number; total: number } {
-  const { studentCount, weights, marks } = params;
+  const { studentCount, weights, marks, weeklyMeetingWeeks, projectType } = params;
 
   let configuredSlotsPerStudent = 0;
   for (const semester of SEMESTERS) {
@@ -47,7 +55,13 @@ export function computeMarksProgress(params: {
       const weight = weights.find(
         (w) => w.semester === semester && w.componentType === component,
       );
-      if (weight && Number(weight.maxMarks) > 0) {
+      if (!weight || Number(weight.maxMarks) <= 0) continue;
+
+      if (component === "WEEKLY_MEETINGS") {
+        configuredSlotsPerStudent += weeklyMeetingWeeks;
+      } else if (component === "SDLC_PHASE") {
+        configuredSlotsPerStudent += getPhasesForType(projectType).length;
+      } else {
         configuredSlotsPerStudent += 1;
       }
     }

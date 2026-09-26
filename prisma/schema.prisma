@@ -53,11 +53,12 @@ enum SoftwarePhase {
 
 /// Ordered phases for a RESEARCH project.
 enum ResearchPhase {
-  LITERATURE_REVIEW
-  PROPOSAL
-  METHODOLOGY
-  DATA_COLLECTION
-  ANALYSIS
+  PROBLEM_DEFINITION
+  EDA
+  DATA_ENGINEERING_PREPROCESSING
+  EXPERIMENTAL_SETUP_MODEL_DESIGN
+  TRAINING_OPTIMIZATION_TESTING
+  VALIDATION_RESULTS_SYNTHESIS
   THESIS_WRITING
 }
 
@@ -131,6 +132,10 @@ model WeightScheme {
   name         String
   /// True for the single scheme coordinator marks as the default for new projects
   isDefault    Boolean  @default(false)
+  /// How many weekly-meeting slots a project on this scheme gets per
+  /// semester (Week 1, Week 2, …). The WEEKLY_MEETINGS component's max
+  /// marks for a semester are split evenly across this many weeks.
+  weeklyMeetingWeeks Int @default(14)
   createdById  String
   createdBy    User     @relation("WeightSchemeCreatedBy", fields: [createdById], references: [id])
   createdAt    DateTime @default(now())
@@ -314,6 +319,20 @@ model Mark {
   student       Student       @relation(fields: [studentId], references: [id])
   semester      Semester
   componentType ComponentType
+  /// Which week this mark is for, only meaningful when componentType is
+  /// WEEKLY_MEETINGS (Week 1, Week 2, …). 0 for every other component —
+  /// a concrete default rather than null, so the unique constraint below
+  /// still enforces "one mark per (project, student, semester,
+  /// component)" for those components (Postgres treats NULLs in a unique
+  /// index as distinct from each other, which a default value avoids).
+  weekNumber Int @default(0)
+  /// Which SDLC/research phase this mark is for (stored as the matching
+  /// SoftwarePhase/ResearchPhase enum value, e.g. "REQUIREMENTS" or
+  /// "EDA"), only meaningful when componentType is SDLC_PHASE. A plain
+  /// String rather than either phase enum, since which one applies
+  /// depends on the project's type. "" for every other component, for
+  /// the same unique-constraint reason as weekNumber above.
+  phaseKey String @default("")
   marksAwarded  Decimal       @db.Decimal(5, 2)
   maxMarks      Decimal       @db.Decimal(5, 2)
   remarks       String?
@@ -326,7 +345,7 @@ model Mark {
 
   emailNotifications MarkEmailNotification[]
 
-  @@unique([projectId, studentId, semester, componentType])
+  @@unique([projectId, studentId, semester, componentType, weekNumber, phaseKey])
   @@index([studentId])
   @@index([projectId])
 }

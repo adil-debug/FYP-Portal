@@ -29,9 +29,13 @@ export async function GET() {
   const rows: AwardListRow[] = [];
   for (const project of projects) {
     for (const member of project.members) {
+      // A component can now have several Mark rows (one per week for
+      // WEEKLY_MEETINGS, one per phase for SDLC_PHASE), so sum into the
+      // component's single award-list column rather than overwriting.
       const marksByKey: Record<string, number | null> = {};
       for (const mark of project.marks.filter((m) => m.studentId === member.studentId)) {
-        marksByKey[`${mark.semester}_${mark.componentType}`] = Number(mark.marksAwarded);
+        const key = `${mark.semester}_${mark.componentType}`;
+        marksByKey[key] = (marksByKey[key] ?? 0) + Number(mark.marksAwarded);
       }
       rows.push({
         studentName: member.student.name,

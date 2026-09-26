@@ -50,21 +50,49 @@ export const SOFTWARE_PHASE_LABELS: Record<(typeof SOFTWARE_PHASES)[number], str
 };
 
 export const RESEARCH_PHASES = [
-  "LITERATURE_REVIEW",
-  "PROPOSAL",
-  "METHODOLOGY",
-  "DATA_COLLECTION",
-  "ANALYSIS",
+  "PROBLEM_DEFINITION",
+  "EDA",
+  "DATA_ENGINEERING_PREPROCESSING",
+  "EXPERIMENTAL_SETUP_MODEL_DESIGN",
+  "TRAINING_OPTIMIZATION_TESTING",
+  "VALIDATION_RESULTS_SYNTHESIS",
   "THESIS_WRITING",
 ] as const;
 
 export const RESEARCH_PHASE_LABELS: Record<(typeof RESEARCH_PHASES)[number], string> = {
-  LITERATURE_REVIEW: "Literature Review",
-  PROPOSAL: "Proposal",
-  METHODOLOGY: "Methodology",
-  DATA_COLLECTION: "Data Collection",
-  ANALYSIS: "Analysis",
+  PROBLEM_DEFINITION: "Problem Definition",
+  EDA: "EDA",
+  DATA_ENGINEERING_PREPROCESSING: "Data Engineering & Preprocessing",
+  EXPERIMENTAL_SETUP_MODEL_DESIGN: "Experimental Setup & Model Design",
+  TRAINING_OPTIMIZATION_TESTING: "Training, Optimization & Iterative Testing",
+  VALIDATION_RESULTS_SYNTHESIS: "Validation & Results Synthesis",
   THESIS_WRITING: "Thesis Writing",
 };
 
 export const MAX_PROJECT_MEMBERS = 3;
+
+/**
+ * Ordered phase keys + display labels for a project's type — used both
+ * by phase-checklist tracking (ProjectPhaseProgress) and by the SDLC_PHASE
+ * mark component's per-phase mark rows, so the two stay in lockstep: the
+ * phases you mark completion on are the same ones you assign a mark to.
+ */
+export function getPhasesForType(
+  type: (typeof PROJECT_TYPES)[number],
+): readonly string[] {
+  return type === "SOFTWARE" ? SOFTWARE_PHASES : RESEARCH_PHASES;
+}
+
+export function getPhaseLabel(
+  type: (typeof PROJECT_TYPES)[number],
+  phaseKey: string,
+): string {
+  const labels: Record<string, string> =
+    type === "SOFTWARE" ? SOFTWARE_PHASE_LABELS : RESEARCH_PHASE_LABELS;
+  return labels[phaseKey] ?? phaseKey;
+}
+
+// Default number of weekly-meeting slots (Week 1, Week 2, …) a new weight
+// scheme gets per semester, matching a typical 14-week semester. Editable
+// per scheme on the weight scheme create form.
+export const DEFAULT_WEEKLY_MEETING_WEEKS = 14;

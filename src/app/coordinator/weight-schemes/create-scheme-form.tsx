@@ -7,6 +7,7 @@ import {
   COMPONENT_LABELS,
   SEMESTERS,
   SEMESTER_LABELS,
+  DEFAULT_WEEKLY_MEETING_WEEKS,
 } from "@/lib/rubric";
 import type { ActionResult } from "@/lib/actions/sessions";
 
@@ -115,6 +116,30 @@ export function CreateSchemeForm({
             Set as default scheme
           </label>
         )}
+      </div>
+
+      <div className="flex flex-col gap-1.5 sm:w-64">
+        <label
+          htmlFor="weeklyMeetingWeeks"
+          className="text-sm font-medium text-slate-700"
+        >
+          Weeks of weekly meetings (per semester)
+        </label>
+        <input
+          id="weeklyMeetingWeeks"
+          name="weeklyMeetingWeeks"
+          type="number"
+          min={1}
+          max={30}
+          step={1}
+          defaultValue={DEFAULT_WEEKLY_MEETING_WEEKS}
+          className="field-input w-24 py-1.5 text-sm"
+        />
+        <p className="text-xs text-slate-500">
+          The Weekly meetings component&apos;s marks are split evenly across
+          this many weeks (Week 1, Week 2, …), so faculty can mark
+          attendance/quality week by week instead of one lump number.
+        </p>
       </div>
 
       <div className="overflow-x-auto">

@@ -55,6 +55,7 @@ export default async function FacultyWeightSchemesPage() {
           isDefault: scheme.isDefault,
           createdByName: scheme.createdBy.name,
           projectCount: scheme._count.projects,
+          weeklyMeetingWeeks: scheme.weeklyMeetingWeeks,
           weights: scheme.componentWeights.map((w) => ({
             semester: w.semester,
             componentType: w.componentType,

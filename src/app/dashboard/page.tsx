@@ -34,18 +34,20 @@ export default async function DashboardPage() {
   return (
     <div className="flex min-h-screen flex-1 flex-col bg-slate-50">
       <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white">
               PO
             </div>
-            <span className="text-lg font-semibold tracking-tight text-slate-900">
+            <span className="truncate text-base font-semibold tracking-tight text-slate-900 sm:text-lg">
               Project Oversight Portal
             </span>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <p className="text-sm font-medium text-slate-900">{user.name}</p>
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="min-w-0 text-right">
+              <p className="truncate text-sm font-medium text-slate-900">
+                {user.name}
+              </p>
               <p className="text-xs text-slate-500">Faculty</p>
             </div>
             <LogoutButton />
@@ -53,8 +55,8 @@ export default async function DashboardPage() {
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-6 py-10">
-        <div className="flex items-center justify-between">
+      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 sm:py-10">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">
               Your projects

@@ -57,8 +57,8 @@ export default async function ProjectDetailPage(
     user.role === "COORDINATOR" || project.supervisorId === user.userId;
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-6 py-10">
-      <div className="flex items-center justify-between">
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-8 sm:px-6 sm:py-10">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
           href={backHref}
           className="w-fit text-sm font-medium text-slate-500 hover:text-slate-700"
@@ -66,7 +66,7 @@ export default async function ProjectDetailPage(
           &larr; Back
         </Link>
         {canEditPhases && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Link
               href={`/projects/${project.id}/edit`}
               className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"

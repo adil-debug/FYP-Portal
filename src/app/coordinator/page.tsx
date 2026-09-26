@@ -31,14 +31,14 @@ export default async function CoordinatorOverviewPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3 lg:grid-cols-5">
         {cards.map((card) => (
           <Link
             key={card.href}
             href={card.href}
-            className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-colors hover:border-indigo-300"
+            className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-colors hover:border-indigo-300 sm:p-5"
           >
-            <p className="text-3xl font-bold text-slate-900">{card.value}</p>
+            <p className="text-2xl font-bold text-slate-900 sm:text-3xl">{card.value}</p>
             <p className="mt-1 text-sm text-slate-500">{card.label}</p>
           </Link>
         ))}

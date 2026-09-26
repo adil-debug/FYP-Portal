@@ -60,8 +60,8 @@ export default async function WeightSchemesPage() {
               key={scheme.id}
               className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
             >
-              <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-3">
-                <div>
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-50 px-4 py-3">
+                <div className="min-w-0">
                   <p className="font-semibold text-slate-900">
                     {scheme.name}
                   </p>
@@ -78,7 +78,8 @@ export default async function WeightSchemesPage() {
                 />
               </div>
 
-              <table className="w-full text-left text-sm">
+              <div className="overflow-x-auto">
+              <table className="w-full min-w-[420px] text-left text-sm">
                 <thead>
                   <tr className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                     <th className="px-4 py-2">Component</th>
@@ -121,6 +122,7 @@ export default async function WeightSchemesPage() {
                   </tr>
                 </tbody>
               </table>
+              </div>
             </div>
           );
         })}

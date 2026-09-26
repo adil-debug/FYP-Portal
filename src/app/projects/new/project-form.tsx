@@ -68,6 +68,16 @@ export function ProjectForm({
   // fields as read-only context so they know who/where the project is.
   const canChangeAssignment = isCoordinator;
 
+  // Shared classes: editable fields get a visible hover/focus affordance so
+  // it's obvious they can be changed; locked (read-only) fields get a
+  // deliberately flat, non-interactive look plus a small lock icon so the
+  // difference from an editable field is visible at a glance, not just
+  // implied by the caption text underneath.
+  const fieldClass =
+    "rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition-colors hover:border-indigo-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500";
+  const lockedFieldClass =
+    "flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600";
+
   return (
     <form
       action={formAction}
@@ -94,7 +104,7 @@ export function ProjectForm({
           required
           defaultValue={isEdit ? mode.project.title : undefined}
           placeholder="AI-Based Attendance System"
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+          className={fieldClass}
         />
       </div>
 
@@ -111,7 +121,7 @@ export function ProjectForm({
           rows={3}
           defaultValue={isEdit ? mode.project.description ?? "" : undefined}
           placeholder="Short summary of the project"
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+          className={fieldClass}
         />
       </div>
 
@@ -121,20 +131,22 @@ export function ProjectForm({
             Project type
           </label>
           {isEdit ? (
-            <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
-              {PROJECT_TYPE_LABELS[mode.project.type]}{" "}
-              <span className="text-xs text-slate-400">
-                (can&apos;t be changed after creation — phase checklist
-                depends on it)
+            <div className={lockedFieldClass} title="Can't be changed after creation">
+              <span>
+                {PROJECT_TYPE_LABELS[mode.project.type]}{" "}
+                <span className="text-xs text-slate-400">
+                  (locked — phase checklist depends on it)
+                </span>
               </span>
-            </p>
+              <LockIcon />
+            </div>
           ) : (
             <select
               id="type"
               name="type"
               required
               defaultValue=""
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+              className={fieldClass}
             >
               <option value="" disabled>
                 Choose a type
@@ -156,20 +168,26 @@ export function ProjectForm({
             Academic session
           </label>
           {isEdit && !canChangeAssignment ? (
-            <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
-              {sessions.find((s) => s.id === mode.project.academicSessionId)
-                ?.label ?? "—"}{" "}
-              <span className="text-xs text-slate-400">
-                (only a coordinator can move a project between sessions)
+            <div
+              className={lockedFieldClass}
+              title="Only a coordinator can move a project between sessions"
+            >
+              <span>
+                {sessions.find((s) => s.id === mode.project.academicSessionId)
+                  ?.label ?? "—"}{" "}
+                <span className="text-xs text-slate-400">
+                  (locked — coordinator only)
+                </span>
               </span>
-            </p>
+              <LockIcon />
+            </div>
           ) : (
             <select
               id="academicSessionId"
               name="academicSessionId"
               required
               defaultValue={isEdit ? mode.project.academicSessionId : ""}
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+              className={fieldClass}
             >
               <option value="" disabled>
                 Choose a session
@@ -204,7 +222,7 @@ export function ProjectForm({
               name="supervisorId"
               required
               defaultValue={isEdit ? mode.project.supervisorId : ""}
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+              className={fieldClass}
             >
               <option value="" disabled>
                 Choose a faculty member
@@ -216,13 +234,19 @@ export function ProjectForm({
               ))}
             </select>
           ) : (
-            <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
-              {faculty.find((f) => f.id === (isEdit ? mode.project.supervisorId : ""))
-                ?.label ?? "You"}{" "}
-              <span className="text-xs text-slate-400">
-                (only a coordinator can reassign the supervisor)
+            <div
+              className={lockedFieldClass}
+              title="Only a coordinator can reassign the supervisor"
+            >
+              <span>
+                {faculty.find((f) => f.id === (isEdit ? mode.project.supervisorId : ""))
+                  ?.label ?? "You"}{" "}
+                <span className="text-xs text-slate-400">
+                  (locked — coordinator only)
+                </span>
               </span>
-            </p>
+              <LockIcon />
+            </div>
           )}
           {canChangeAssignment && faculty.length === 0 && (
             <p className="text-xs text-amber-600">
@@ -241,7 +265,7 @@ export function ProjectForm({
           name="weightSchemeId"
           required
           defaultValue={isEdit ? mode.project.weightSchemeId : defaultSchemeId ?? ""}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+          className={fieldClass}
         >
           <option value="" disabled>
             Choose a weight scheme
@@ -265,7 +289,7 @@ export function ProjectForm({
         <span className="text-sm font-medium text-slate-700">
           Students ({selectedStudentIds.length}/{MAX_PROJECT_MEMBERS})
         </span>
-        <div className="max-h-56 overflow-y-auto rounded-md border border-slate-300">
+        <div className="max-h-56 overflow-y-auto rounded-md border border-slate-300 transition-colors hover:border-indigo-300">
           {students.length === 0 && (
             <p className="px-3 py-3 text-sm text-slate-400">
               No students exist yet. Ask the coordinator to add some first.
@@ -315,5 +339,22 @@ export function ProjectForm({
             : "Create project"}
       </button>
     </form>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      className="h-4 w-4 shrink-0 text-slate-400"
+      aria-hidden="true"
+    >
+      <path
+        fillRule="evenodd"
+        d="M10 1a4 4 0 00-4 4v2H5a2 2 0 00-2 2v7a2 2 0 002 2h10a2 2 0 002-2V9a2 2 0 00-2-2h-1V5a4 4 0 00-4-4zm2 6V5a2 2 0 10-4 0v2h4z"
+        clipRule="evenodd"
+      />
+    </svg>
   );
 }

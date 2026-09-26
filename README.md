@@ -35,7 +35,7 @@ current marks across all components.
 3. **Authentication** — Coordinator / Faculty login &amp; route protection
 4. **Coordinator features** — create faculty &amp; student accounts, academic sessions, weight schemes
 5. **Project creation & assignment** — faculty &amp; coordinator create projects, assign students
-6. **SDLC / research phase tracking UI** (this step) — supervisor/coordinator update phase status & notes
+6. **SDLC / research phase tracking UI** — supervisor/coordinator update phase status & notes
 7. Marks entry (per student, per component, per semester)
 8. Email notifications on mark updates
 9. Dashboards (faculty view, coordinator view)
@@ -251,6 +251,30 @@ and `updatePhaseProgress` do, verified end-to-end with a non-supervising
 faculty account that's redirected away before it can reach the edit page,
 and with a seeded project that has a mark attached to confirm delete is
 actually blocked (not just discouraged in the UI).
+
+## Mobile layout & editable-field affordance
+
+Two UI adjustments made alongside the CRUD work above:
+
+- **Responsive layout.** The coordinator section's sidebar now stacks above
+  the page content on narrow screens instead of squeezing into a fixed-width
+  column (`src/app/coordinator/layout.tsx`), and becomes a horizontally
+  scrollable tab row rather than wrapping awkwardly. Every table in the
+  coordinator section (Projects, Faculty, Students, Sessions, Weight
+  Schemes) now scrolls horizontally on narrow screens (`overflow-x-auto` +
+  a `min-w` on the table) instead of being clipped. Header rows that pair a
+  title with a right-aligned control (name + logout, back link + edit/delete
+  buttons) now wrap and truncate instead of overflowing when the content is
+  long. Verified with a real headless-browser check at a 375px-wide (iPhone
+  SE) viewport across every page — zero horizontal overflow.
+- **Editable vs. locked fields on the project edit page.** Every real input,
+  textarea, and select now has a visible hover/focus border color change, so
+  it's obvious it can be edited. Fields that are shown but can't be changed
+  in the current context (project type after creation; academic session and
+  supervisor for a faculty account, which only a coordinator can reassign)
+  are now rendered with a distinct flat grey background and a small lock
+  icon, not just explanatory text underneath — so the difference between
+  "editable" and "locked" is visible at a glance (`src/app/projects/new/project-form.tsx`).
 
 ## Database commands
 

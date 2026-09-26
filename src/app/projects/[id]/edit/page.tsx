@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
@@ -54,7 +55,13 @@ export default async function EditProjectPage(
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-8 sm:px-6 sm:py-10">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+        <Link
+          href={`/projects/${project.id}`}
+          className="text-sm font-medium text-slate-500 hover:text-slate-700"
+        >
+          &larr; Back
+        </Link>
+        <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900">
           Edit project
         </h1>
         <p className="mt-1 text-sm text-slate-600">{project.title}</p>

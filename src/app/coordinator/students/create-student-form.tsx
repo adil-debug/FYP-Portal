@@ -42,7 +42,7 @@ export function CreateStudentForm() {
             type="text"
             required
             placeholder="Ali Ahmed"
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+            className="field-input text-sm"
           />
         </div>
 
@@ -59,7 +59,7 @@ export function CreateStudentForm() {
             type="text"
             required
             placeholder="BSCS-21-001"
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+            className="field-input text-sm"
           />
         </div>
 
@@ -73,7 +73,7 @@ export function CreateStudentForm() {
             type="email"
             required
             placeholder="ali.ahmed@student.edu"
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+            className="field-input text-sm"
           />
         </div>
       </div>
@@ -81,7 +81,7 @@ export function CreateStudentForm() {
       <button
         type="submit"
         disabled={isPending}
-        className="self-start rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+        className="btn-solid-primary self-start text-sm"
       >
         {isPending ? "Adding…" : "Add student"}
       </button>

@@ -21,7 +21,7 @@ export function AwardListDownloadForm({
           id="sessionId"
           value={sessionId}
           onChange={(e) => setSessionId(e.target.value)}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition-colors hover:border-indigo-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+          className="field-input text-sm"
         >
           <option value="all">All sessions</option>
           {sessions.map((s) => (
@@ -35,7 +35,7 @@ export function AwardListDownloadForm({
       <a
         href={href}
         download
-        className="self-start rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700"
+        className="btn-solid-primary self-start text-sm"
       >
         Download CSV
       </a>

@@ -18,7 +18,7 @@ export function DeleteProjectButton({ projectId }: { projectId: string }) {
       <button
         type="button"
         onClick={() => setConfirming(true)}
-        className="rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
+        className="btn-outline-danger text-sm"
       >
         Delete project
       </button>
@@ -35,14 +35,14 @@ export function DeleteProjectButton({ projectId }: { projectId: string }) {
         <button
           type="button"
           onClick={() => setConfirming(false)}
-          className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+          className="btn-outline text-xs"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={isPending}
-          className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-60"
+          className="btn-solid-danger text-xs"
         >
           {isPending ? "Deleting…" : "Yes, delete"}
         </button>

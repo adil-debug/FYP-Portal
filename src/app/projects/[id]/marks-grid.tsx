@@ -231,7 +231,7 @@ function MarkCell({
           step="0.5"
           defaultValue={mark?.marksAwarded ?? ""}
           autoFocus
-          className="w-16 rounded-md border border-slate-300 px-2 py-1 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+          className="field-input w-16 py-1 text-sm"
         />
         <span className="text-xs text-slate-400">/ {max}</span>
       </div>
@@ -241,7 +241,7 @@ function MarkCell({
         name="remarks"
         placeholder="Remarks (optional)"
         defaultValue={mark?.remarks ?? ""}
-        className="rounded-md border border-slate-300 px-2 py-1 text-xs outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+        className="field-input py-1 text-xs"
       />
 
       {state.error && (
@@ -252,14 +252,14 @@ function MarkCell({
         <button
           type="submit"
           disabled={isPending}
-          className="rounded-md bg-indigo-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-indigo-500 disabled:opacity-60"
+          className="btn-solid-primary px-2.5 py-1 text-xs"
         >
           {isPending ? "Saving…" : "Save"}
         </button>
         <button
           type="button"
           onClick={() => setExpanded(false)}
-          className="rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+          className="btn-outline px-2.5 py-1 text-xs"
         >
           Cancel
         </button>

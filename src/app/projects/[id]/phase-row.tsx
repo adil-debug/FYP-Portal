@@ -43,7 +43,7 @@ export function PhaseRow({
 
   if (!canEdit) {
     return (
-      <li className="flex items-center justify-between px-4 py-3 text-sm">
+      <li className="hover-row flex items-center justify-between px-4 py-3 text-sm">
         <span className="text-slate-700">{label}</span>
         <span
           className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[status]}`}
@@ -55,11 +55,11 @@ export function PhaseRow({
   }
 
   return (
-    <li className="px-4 py-3 text-sm">
+    <li className="hover-row px-4 py-3 text-sm">
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        className="flex w-full items-center justify-between text-left"
+        className="flex w-full items-center justify-between rounded-md border border-transparent px-2 py-1 -mx-2 text-left transition-colors hover:border-indigo-200 hover:bg-indigo-50/60"
       >
         <span className="text-slate-700">{label}</span>
         <span className="flex items-center gap-2">
@@ -68,7 +68,7 @@ export function PhaseRow({
           >
             {STATUS_OPTIONS.find((s) => s.value === status)?.label ?? status}
           </span>
-          <span className="text-xs text-slate-400">
+          <span className="text-xs font-medium text-indigo-600">
             {expanded ? "Hide" : "Edit"}
           </span>
         </span>
@@ -93,7 +93,7 @@ export function PhaseRow({
               id={`status-${phaseId}`}
               name="status"
               defaultValue={status}
-              className="rounded-md border border-slate-300 px-2 py-1.5 text-sm text-slate-900"
+              className="field-input"
             >
               {STATUS_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -116,7 +116,7 @@ export function PhaseRow({
               defaultValue={notes ?? ""}
               rows={2}
               placeholder="Progress notes, blockers, next steps..."
-              className="rounded-md border border-slate-300 px-2 py-1.5 text-sm text-slate-900"
+              className="field-input"
             />
           </div>
 
@@ -134,7 +134,7 @@ export function PhaseRow({
             <button
               type="submit"
               disabled={isPending}
-              className="rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500 disabled:opacity-60"
+              className="btn-solid-primary text-xs"
             >
               {isPending ? "Saving..." : "Save"}
             </button>

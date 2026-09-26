@@ -92,7 +92,7 @@ export function CreateSchemeForm() {
             type="text"
             required
             placeholder="Default FYP Scheme"
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+            className="field-input text-sm"
           />
         </div>
         <label className="flex items-center gap-2 self-end pb-2 text-sm font-medium text-slate-700">
@@ -141,7 +141,7 @@ export function CreateSchemeForm() {
                       onChange={(e) =>
                         setWeight(semester, component, Number(e.target.value))
                       }
-                      className="w-24 rounded-md border border-slate-300 px-2 py-1.5 text-sm text-slate-900 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                      className="field-input w-24 py-1.5 text-sm"
                     />
                   </td>
                 ))}
@@ -169,7 +169,7 @@ export function CreateSchemeForm() {
       <button
         type="submit"
         disabled={isPending}
-        className="self-start rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+        className="btn-solid-primary self-start text-sm"
       >
         {isPending ? "Creating…" : "Create weight scheme"}
       </button>

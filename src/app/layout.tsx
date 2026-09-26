@@ -16,6 +16,14 @@ export const metadata: Metadata = {
   title: "Project Oversight Portal",
   description:
     "FYP oversight portal for tracking undergraduate CS project progress, SDLC phases, and marks.",
+  // This is an internal tool with student names and marks — never index it.
+  // Backed up by robots.txt (src/app/robots.ts) and an X-Robots-Tag header
+  // (next.config.ts), since not every crawler respects all three the same
+  // way.
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -71,19 +71,19 @@ export default async function DashboardPage() {
           <div className="flex items-center gap-2">
             <Link
               href="/weight-schemes"
-              className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+              className="btn-outline text-sm"
             >
               Weight schemes
             </Link>
             <Link
               href="/award-list"
-              className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+              className="btn-outline text-sm"
             >
               Award list
             </Link>
             <Link
               href="/projects/new"
-              className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700"
+              className="btn-solid-primary text-sm"
             >
               + New project
             </Link>

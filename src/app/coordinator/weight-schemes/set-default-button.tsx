@@ -24,7 +24,7 @@ export function SetDefaultButton({
     <button
       onClick={() => startTransition(() => setDefaultWeightScheme(schemeId))}
       disabled={isPending}
-      className="rounded-full border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-60"
+      className="btn-outline rounded-full px-2.5 py-1 text-xs"
     >
       {isPending ? "Setting…" : "Make default"}
     </button>

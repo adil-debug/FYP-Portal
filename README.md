@@ -44,9 +44,11 @@ current marks across all components.
    user wants to take on right now, this phase is deliberately deferred,
    not forgotten — it can be picked up later once a domain is available,
    without changing anything already built.
-9. **Dashboards** (this step) — marks progress, at-risk flags, coordinator
-   marks overview, simple charts, downloadable award lists
-10. UI polish & deployment finalization
+9. **Dashboards** — marks progress, at-risk flags, coordinator marks
+   overview, simple charts, downloadable award lists
+10. **UI polish & deployment finalization** (this step) — consistent
+    hover/focus states, custom error pages, security headers, and a
+    deployment checklist
 
 ## Getting started locally
 
@@ -352,6 +354,84 @@ from existing phases/marks data in `src/lib/project-stats.ts`.
     scoped to just the caller's own supervised students; there's no filter
     to pick, since the whole file only ever contains their own projects.
 
+## Phase 10: UI polish & deployment finalization
+
+### Consistent hover/focus states and contrast
+
+Before this pass, hover/focus styling on inputs, selects, textareas, and
+secondary/outline buttons was applied ad hoc — some forms got a clear
+hover border, others (notably the phase-status dropdown/notes field on a
+project's detail page, and a few mark-entry inputs) got only a static
+border with no feedback at all, making it unclear they were interactive.
+Disabled solid-color buttons also used a flat `opacity-60`, which washed
+out the white button text against the page background.
+
+Five shared CSS classes now live in `src/app/globals.css` and are applied
+everywhere a matching element appears, instead of one-off Tailwind
+utility strings per form:
+
+- `.field-input` — text/number inputs, selects, textareas. Slate border →
+  indigo border on hover → indigo border + ring on focus.
+- `.btn-outline` / `.btn-outline-danger` — secondary buttons (Cancel, Back,
+  Edit) and red "trigger a delete" buttons. Hover now shows a visibly
+  darker border, a background tint, and a subtle shadow.
+- `.btn-solid-primary` / `.btn-solid-danger` — solid indigo/red action
+  buttons. Disabled state is a flatter, lighter background color instead
+  of `opacity-60`, so the button text stays legible instead of washing
+  out.
+- `.hover-row` — list rows meant to be clicked (e.g. each phase in a
+  project's SDLC/research phase list) get a visible background change on
+  hover instead of no feedback.
+
+### Custom error pages
+
+- `src/app/not-found.tsx` — branded 404 page (matching the app's look)
+  instead of the plain Next.js default, shown whenever `notFound()` is
+  called or an unknown URL is visited.
+- `src/app/error.tsx` — a client-side error boundary for exceptions
+  thrown while rendering a page, with a "Try again" button and a link
+  back to the dashboard. Note: this Next.js version's `error.tsx`
+  receives a `retry` callback, not the `reset` prop from older Next.js
+  versions/training data (see `AGENTS.md`).
+- `src/app/global-error.tsx` — the rarer case of the root layout itself
+  crashing. Uses inline styles rather than Tailwind classes, since it
+  replaces the root layout (and therefore `globals.css` may not have
+  loaded) when it's shown.
+
+### Security headers & no indexing
+
+This is an internal tool holding student names and marks, so:
+
+- `next.config.ts` sets `X-Frame-Options: DENY`, `X-Content-Type-Options:
+  nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, a
+  `Permissions-Policy` disabling camera/microphone/geolocation, an
+  `X-Robots-Tag: noindex, nofollow`, and a `Content-Security-Policy`
+  scoped to `'self'` (no third-party scripts/styles/embeds anywhere in
+  this app). The CSP only adds `'unsafe-eval'` when `NODE_ENV` isn't
+  `production` — React/Turbopack's dev-mode tooling needs it for
+  hot-reload and better stack traces, but a real Vercel deployment never
+  does, so the deployed app keeps the stricter policy.
+- `src/app/robots.ts` generates a `robots.txt` that disallows everything,
+  and `src/app/layout.tsx`'s metadata sets `robots: { index: false,
+  follow: false }` as a second layer, since not every crawler honors
+  `robots.txt` and `X-Robots-Tag` the same way.
+
+### Deployment checklist
+
+See **`DEPLOYMENT.md`** for the ongoing operational checklist: what to
+check before/after each push, how Neon's backups work, how to roll back a
+bad deploy on Vercel, notes on adding a custom domain later, and what to
+do if a real secret is ever accidentally committed.
+
+### Small fix: project edit page navigation
+
+The project edit page (`/projects/[id]/edit`) previously had no way to
+leave without submitting the form — the only exit was "Save changes",
+which redirects to the project detail page. It now has the same "&larr;
+Back" link used elsewhere in the app, linking straight back to the
+project's detail page, with no change to the existing save-and-redirect
+behavior.
+
 ## Mobile layout & editable-field affordance
 
 Two UI adjustments made alongside the CRUD work above:
@@ -385,6 +465,10 @@ npm run db:generate  # regenerate the Prisma Client after schema edits
 ```
 
 ## Deployment
+
+This section is the one-time initial setup. For the ongoing checklist —
+what to check before/after each push, backups, rollback, and what to do
+if a secret is ever accidentally committed — see **`DEPLOYMENT.md`**.
 
 ### 1. Create a free Neon Postgres database
 

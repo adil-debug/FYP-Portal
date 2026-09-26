@@ -102,7 +102,7 @@ export default async function ProjectDetailPage(
           <div className="flex flex-wrap items-center gap-2">
             <Link
               href={`/projects/${project.id}/edit`}
-              className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+              className="btn-outline text-sm"
             >
               Edit project
             </Link>

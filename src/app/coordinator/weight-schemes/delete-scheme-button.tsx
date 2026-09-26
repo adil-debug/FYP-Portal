@@ -34,7 +34,7 @@ export function DeleteSchemeButton({
         onClick={() => setConfirming(true)}
         disabled={!!disabledReason}
         title={disabledReason}
-        className="rounded-md border border-red-200 px-2.5 py-1 text-xs font-medium text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
+        className="btn-outline-danger px-2.5 py-1 text-xs"
       >
         Delete
       </button>
@@ -49,14 +49,14 @@ export function DeleteSchemeButton({
         <button
           type="button"
           onClick={() => setConfirming(false)}
-          className="rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+          className="btn-outline px-2.5 py-1 text-xs"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={isPending}
-          className="rounded-md bg-red-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-60"
+          className="btn-solid-danger px-2.5 py-1 text-xs"
         >
           {isPending ? "Deleting…" : "Yes, delete"}
         </button>

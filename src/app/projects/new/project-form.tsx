@@ -73,8 +73,7 @@ export function ProjectForm({
   // deliberately flat, non-interactive look plus a small lock icon so the
   // difference from an editable field is visible at a glance, not just
   // implied by the caption text underneath.
-  const fieldClass =
-    "rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition-colors hover:border-indigo-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500";
+  const fieldClass = "field-input text-sm";
   const lockedFieldClass =
     "flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600";
 
@@ -289,7 +288,7 @@ export function ProjectForm({
         <span className="text-sm font-medium text-slate-700">
           Students ({selectedStudentIds.length}/{MAX_PROJECT_MEMBERS})
         </span>
-        <div className="max-h-56 overflow-y-auto rounded-md border border-slate-300 transition-colors hover:border-indigo-300">
+        <div className="max-h-56 overflow-y-auto rounded-md border border-slate-300 transition-colors hover:border-indigo-400">
           {students.length === 0 && (
             <p className="px-3 py-3 text-sm text-slate-400">
               No students exist yet. Ask the coordinator to add some first.
@@ -328,7 +327,7 @@ export function ProjectForm({
       <button
         type="submit"
         disabled={isPending}
-        className="self-start rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+        className="btn-solid-primary self-start text-sm"
       >
         {isPending
           ? isEdit

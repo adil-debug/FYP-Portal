@@ -34,7 +34,7 @@ export function CreateSessionForm() {
           type="text"
           required
           placeholder="e.g. 2025-2026"
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+          className="field-input text-sm"
         />
         {state.error && (
           <p className="text-sm text-red-600">{state.error}</p>
@@ -43,7 +43,7 @@ export function CreateSessionForm() {
       <button
         type="submit"
         disabled={isPending}
-        className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+        className="btn-solid-primary text-sm"
       >
         {isPending ? "Creating…" : "Create session"}
       </button>

@@ -33,7 +33,7 @@ export default async function FacultyAwardListPage() {
         <a
           href="/api/award-list/faculty"
           download
-          className="self-start rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700"
+          className="btn-solid-primary self-start text-sm"
         >
           Download CSV
         </a>

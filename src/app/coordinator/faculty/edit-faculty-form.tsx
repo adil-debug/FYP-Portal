@@ -59,7 +59,7 @@ export function EditFacultyForm({
             type="text"
             required
             defaultValue={name}
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+            className="field-input text-sm"
           />
         </div>
 
@@ -73,7 +73,7 @@ export function EditFacultyForm({
             type="email"
             required
             defaultValue={email}
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+            className="field-input text-sm"
           />
         </div>
       </div>
@@ -91,7 +91,7 @@ export function EditFacultyForm({
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Leave blank to keep current password"
-            className="min-w-0 flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition-colors hover:border-indigo-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+            className="field-input min-w-0 flex-1 text-sm"
           />
           <button
             type="button"
@@ -99,14 +99,14 @@ export function EditFacultyForm({
               setPassword(generatePassword());
               setShowPassword(true);
             }}
-            className="whitespace-nowrap rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className="btn-outline whitespace-nowrap text-sm"
           >
             Generate
           </button>
           <button
             type="button"
             onClick={() => setShowPassword((v) => !v)}
-            className="whitespace-nowrap rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className="btn-outline whitespace-nowrap text-sm"
           >
             {showPassword ? "Hide" : "Show"}
           </button>
@@ -122,7 +122,7 @@ export function EditFacultyForm({
       <button
         type="submit"
         disabled={isPending}
-        className="self-start rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+        className="btn-solid-primary self-start text-sm"
       >
         {isPending ? "Saving…" : "Save changes"}
       </button>

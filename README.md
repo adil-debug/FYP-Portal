@@ -795,6 +795,36 @@ student](#deleting-a-student) still requires them to not be on any
 project). Creating a new project still requires at least one student, as
 before.
 
+### Session length
+
+Sessions expire 1 hour after login (a fixed expiry, not sliding —
+`SESSION_DURATION_SECONDS` in `src/lib/auth.ts`), down from the original
+7 days. See the [Auth & sessions](#auth--sessions) section above.
+
+### Sidebar & dashboard redesign
+
+The coordinator console's navigation and both dashboards' headers were
+plain white, which looked flat next to the rest of the app. They're now
+a consistent dark (`slate-900`) brand surface:
+
+- The coordinator console has a real sidebar (`src/app/coordinator/sidebar-nav.tsx`)
+  — fixed-width and full-height on desktop, with an icon
+  (`src/components/icons.tsx`) and label per section, and the current
+  page highlighted in indigo. On narrow screens it collapses into a dark
+  horizontally-scrolling strip instead of switching to a different
+  (white) style, so the two breakpoints still read as one design; the
+  user's name and account actions move into a small header below the
+  strip, since the strip itself has no room for them.
+- The faculty dashboard's header was restyled to match the same dark
+  surface and branding, and its toolbar (Students / Weight schemes /
+  Award list / New project) now sits inside a bordered card with a
+  one-line summary ("Supervising N projects · M need attention").
+- `LogoutButton` (`src/app/dashboard/logout-button.tsx`) takes a
+  `className` prop now, since it renders on both a light background
+  (mobile coordinator header) and a dark one (sidebar footer, faculty
+  header) that need different styling.
+
+## Database commands
 
 ```bash
 npm run db:migrate   # create & apply a new migration from schema changes

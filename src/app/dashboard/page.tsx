@@ -34,47 +34,63 @@ export default async function DashboardPage() {
     },
   });
 
+  const atRiskCount = projects.filter((project) =>
+    isProjectAtRisk({
+      phases: project.phases,
+      marks: project.marks,
+    }),
+  ).length;
+
   return (
     <div className="flex min-h-screen flex-1 flex-col bg-slate-50">
-      <header className="border-b border-slate-200 bg-white">
+      <header className="bg-slate-900">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
-          <div className="flex min-w-0 items-center gap-2">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-500 text-sm font-bold text-white">
               PO
             </div>
-            <span className="truncate text-base font-semibold tracking-tight text-slate-900 sm:text-lg">
-              Project Oversight Portal
-            </span>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold tracking-tight text-white sm:text-base">
+                Project Oversight
+              </p>
+              <p className="text-xs text-slate-400">Faculty dashboard</p>
+            </div>
           </div>
           <div className="flex items-center gap-3 sm:gap-4">
             <div className="min-w-0 text-right">
-              <p className="truncate text-sm font-medium text-slate-900">
+              <p className="truncate text-sm font-medium text-white">
                 {user.name}
               </p>
-              <p className="text-xs text-slate-500">Faculty</p>
+              <p className="text-xs text-slate-400">Faculty</p>
             </div>
             <Link
               href="/account/change-password"
-              className="btn-outline text-sm"
+              className="rounded-md border border-white/15 px-3 py-1.5 text-sm font-medium text-slate-200 transition-colors hover:bg-white/5 hover:text-white"
             >
               Change password
             </Link>
-            <LogoutButton />
+            <LogoutButton className="rounded-md border border-white/15 px-3 py-1.5 text-sm font-medium text-slate-200 transition-colors hover:bg-white/5 hover:text-white" />
           </div>
         </div>
       </header>
 
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 sm:py-10">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-start justify-between gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">
               Your projects
             </h1>
             <p className="mt-1 text-sm text-slate-600">
-              Projects you supervise as faculty.
+              {projects.length === 0
+                ? "Projects you supervise as faculty."
+                : `Supervising ${projects.length} project${projects.length === 1 ? "" : "s"}${
+                    atRiskCount > 0
+                      ? ` · ${atRiskCount} need${atRiskCount === 1 ? "s" : ""} attention`
+                      : ""
+                  }.`}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Link
               href="/students"
               className="btn-outline text-sm"

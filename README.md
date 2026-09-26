@@ -32,8 +32,8 @@ current marks across all components.
 
 1. **Project scaffold** — Next.js + Tailwind + GitHub + Vercel
 2. **Database setup** — Neon Postgres + Prisma schema
-3. **Authentication** (this step) — Coordinator / Faculty login &amp; route protection
-4. Coordinator features (create faculty & student accounts, default weight scheme)
+3. **Authentication** — Coordinator / Faculty login &amp; route protection
+4. **Coordinator features** (this step) — create faculty &amp; student accounts, academic sessions, weight schemes
 5. Project creation & assignment
 6. SDLC / research phase tracking UI
 7. Marks entry (per student, per component, per semester)
@@ -113,6 +113,42 @@ introduce breaking changes before its 1.0 isn't a good trade — especially
 when the actual requirement (email+password login, two roles) doesn't need
 NextAuth's OAuth-provider machinery at all. The custom approach here is
 ~150 lines of code total and fully under your control.
+
+## Coordinator features
+
+Everything under `/coordinator` is restricted to Coordinator accounts (both
+by `proxy.ts` and by `src/app/coordinator/layout.tsx` re-checking the
+session, plus every Server Function calling `requireCoordinator()`).
+
+- **Academic Sessions** (`/coordinator/sessions`) — create cohorts like
+  "2025-2026" and toggle them active/inactive. Every project will belong to
+  one session (added in Phase 5).
+- **Faculty** (`/coordinator/faculty`) — create login accounts for faculty.
+  The coordinator sets (or auto-generates) an initial password and shares
+  it with the faculty member directly — there's no email step yet (that's
+  Phase 8), so the password is shown once on screen after creation.
+- **Students** (`/coordinator/students`) — add student records (name, roll
+  number, email). Students never get a login; roll number must be unique.
+- **Weight Schemes** (`/coordinator/weight-schemes`) — configure how each
+  semester's 100 marks are split across the 5 rubric components. Multiple
+  schemes can exist; exactly one is marked "Default" at a time (creating or
+  promoting a new default automatically un-defaults the previous one). A
+  scheme can be saved even if a semester's weights don't sum to 100 — the
+  UI warns about it, since a coordinator may want to build it up in stages
+  before finishing.
+
+All of the create forms use React's `useActionState` with Server Functions
+(`"use server"`), so they work with progressive enhancement and don't need
+any client-side data-fetching library.
+
+### A note on `"use server"` files
+
+A file marked `"use server"` (everything under `src/lib/actions/`) may
+**only** export `async` functions — not constants, types being the one
+exception since they're erased at compile time. That's why the shared
+rubric constants (`COMPONENT_TYPES`, `SEMESTER_LABELS`, etc.) live in
+`src/lib/rubric.ts` instead of alongside the weight-scheme Server
+Functions — keep that split in mind if you add new shared constants later.
 
 ## Database commands
 

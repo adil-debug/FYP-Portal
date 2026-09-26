@@ -12,6 +12,12 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
+  // Coordinators have their own dedicated section; the rest of this page
+  // is a Faculty placeholder until Phase 9 builds the real dashboards.
+  if (user.role === "COORDINATOR") {
+    redirect("/coordinator");
+  }
+
   return (
     <div className="flex min-h-screen flex-1 flex-col bg-slate-50">
       <header className="border-b border-slate-200 bg-white">
@@ -27,9 +33,7 @@ export default async function DashboardPage() {
           <div className="flex items-center gap-4">
             <div className="text-right">
               <p className="text-sm font-medium text-slate-900">{user.name}</p>
-              <p className="text-xs text-slate-500">
-                {user.role === "COORDINATOR" ? "FYP Coordinator" : "Faculty"}
-              </p>
+              <p className="text-xs text-slate-500">Faculty</p>
             </div>
             <LogoutButton />
           </div>
@@ -38,15 +42,14 @@ export default async function DashboardPage() {
 
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 px-6 py-12">
         <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-indigo-600 w-fit">
-          Phase 3 · Authentication
+          Faculty dashboard · placeholder
         </span>
         <h1 className="text-3xl font-bold tracking-tight text-slate-900">
           You&apos;re signed in, {user.name.split(" ")[0]}.
         </h1>
         <p className="max-w-xl text-slate-600">
-          This dashboard is a placeholder confirming login works end-to-end.
-          The real coordinator/faculty dashboards (project lists, marks
-          entry, phase tracking) are built in later phases.
+          This is a placeholder. Your real dashboard — supervised projects,
+          marks entry, and phase tracking — is built in Phase 9.
         </p>
       </main>
     </div>

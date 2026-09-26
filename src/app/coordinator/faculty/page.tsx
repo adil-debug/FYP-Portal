@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { CreateFacultyForm } from "./create-faculty-form";
 
@@ -30,12 +31,13 @@ export default async function FacultyPage() {
               <th className="px-4 py-3">Email</th>
               <th className="px-4 py-3">Supervised projects</th>
               <th className="px-4 py-3">Created</th>
+              <th className="px-4 py-3"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {faculty.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-slate-400">
+                <td colSpan={5} className="px-4 py-6 text-center text-slate-400">
                   No faculty accounts yet. Create one above.
                 </td>
               </tr>
@@ -51,6 +53,14 @@ export default async function FacultyPage() {
                 </td>
                 <td className="px-4 py-3 text-slate-500">
                   {member.createdAt.toLocaleDateString()}
+                </td>
+                <td className="px-4 py-3 text-right">
+                  <Link
+                    href={`/coordinator/faculty/${member.id}`}
+                    className="font-medium text-indigo-700 hover:underline"
+                  >
+                    Edit
+                  </Link>
                 </td>
               </tr>
             ))}

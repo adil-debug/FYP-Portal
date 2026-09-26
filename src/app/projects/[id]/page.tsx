@@ -7,18 +7,8 @@ import {
   SOFTWARE_PHASE_LABELS,
   RESEARCH_PHASE_LABELS,
 } from "@/lib/rubric";
-
-const PHASE_STATUS_STYLES: Record<string, string> = {
-  NOT_STARTED: "bg-slate-100 text-slate-500",
-  IN_PROGRESS: "bg-amber-50 text-amber-700",
-  COMPLETED: "bg-green-50 text-green-700",
-};
-
-const PHASE_STATUS_LABELS: Record<string, string> = {
-  NOT_STARTED: "Not started",
-  IN_PROGRESS: "In progress",
-  COMPLETED: "Completed",
-};
+import { PhaseRow } from "./phase-row";
+import { DeleteProjectButton } from "./delete-project-button";
 
 export default async function ProjectDetailPage(
   props: PageProps<"/projects/[id]">,
@@ -37,6 +27,7 @@ export default async function ProjectDetailPage(
       supervisor: { select: { id: true, name: true, email: true } },
       weightScheme: { select: { name: true } },
       phases: true,
+      _count: { select: { marks: true } },
     },
   });
 
@@ -62,15 +53,30 @@ export default async function ProjectDetailPage(
   });
 
   const backHref = user.role === "COORDINATOR" ? "/coordinator/projects" : "/dashboard";
+  const canEditPhases =
+    user.role === "COORDINATOR" || project.supervisorId === user.userId;
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-6 py-10">
-      <Link
-        href={backHref}
-        className="w-fit text-sm font-medium text-slate-500 hover:text-slate-700"
-      >
-        &larr; Back
-      </Link>
+      <div className="flex items-center justify-between">
+        <Link
+          href={backHref}
+          className="w-fit text-sm font-medium text-slate-500 hover:text-slate-700"
+        >
+          &larr; Back
+        </Link>
+        {canEditPhases && (
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/projects/${project.id}/edit`}
+              className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+            >
+              Edit project
+            </Link>
+            <DeleteProjectButton projectId={project.id} />
+          </div>
+        )}
+      </div>
 
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
@@ -86,6 +92,13 @@ export default async function ProjectDetailPage(
         </h1>
         {project.description && (
           <p className="text-sm text-slate-600">{project.description}</p>
+        )}
+        {project._count.marks > 0 && (
+          <p className="text-xs text-amber-600">
+            This project has {project._count.marks} recorded mark
+            {project._count.marks === 1 ? "" : "s"} and can&apos;t be deleted
+            until they&apos;re removed.
+          </p>
         )}
       </div>
 
@@ -130,29 +143,28 @@ export default async function ProjectDetailPage(
             {project.type === "SOFTWARE" ? "SDLC phases" : "Research phases"}
           </h2>
           <p className="text-xs text-slate-500">
-            Phase tracking is edited by the supervisor in a later phase of
-            this build.
+            {canEditPhases
+              ? "Click a phase to update its status and add notes."
+              : "Phase tracking is managed by the supervisor and coordinator."}
           </p>
         </div>
         <ul className="divide-y divide-slate-100">
           {orderedPhases.map((phase) => {
             const key = phase.softwarePhase ?? phase.researchPhase ?? "";
             return (
-              <li
+              <PhaseRow
                 key={phase.id}
-                className="flex items-center justify-between px-4 py-3 text-sm"
-              >
-                <span className="text-slate-700">
-                  {phaseLabels[key as keyof typeof phaseLabels] ?? key}
-                </span>
-                <span
-                  className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                    PHASE_STATUS_STYLES[phase.status]
-                  }`}
-                >
-                  {PHASE_STATUS_LABELS[phase.status]}
-                </span>
-              </li>
+                projectId={project.id}
+                phaseId={phase.id}
+                label={phaseLabels[key as keyof typeof phaseLabels] ?? key}
+                status={phase.status}
+                notes={phase.notes}
+                updatedAt={phase.updatedAt.toLocaleString("en-US", {
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                })}
+                canEdit={canEditPhases}
+              />
             );
           })}
         </ul>

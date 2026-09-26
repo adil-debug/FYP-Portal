@@ -34,8 +34,8 @@ current marks across all components.
 2. **Database setup** — Neon Postgres + Prisma schema
 3. **Authentication** — Coordinator / Faculty login &amp; route protection
 4. **Coordinator features** — create faculty &amp; student accounts, academic sessions, weight schemes
-5. **Project creation & assignment** (this step) — faculty &amp; coordinator create projects, assign students
-6. SDLC / research phase tracking UI
+5. **Project creation & assignment** — faculty &amp; coordinator create projects, assign students
+6. **SDLC / research phase tracking UI** (this step) — supervisor/coordinator update phase status & notes
 7. Marks entry (per student, per component, per semester)
 8. Email notifications on mark updates
 9. Dashboards (faculty view, coordinator view)
@@ -123,10 +123,20 @@ session, plus every Server Function calling `requireCoordinator()`).
 - **Academic Sessions** (`/coordinator/sessions`) — create cohorts like
   "2025-2026" and toggle them active/inactive. Every project belongs to
   one session.
-- **Faculty** (`/coordinator/faculty`) — create login accounts for faculty.
-  The coordinator sets (or auto-generates) an initial password and shares
-  it with the faculty member directly — there's no email step yet (that's
-  Phase 8), so the password is shown once on screen after creation.
+- **Faculty** (`/coordinator/faculty`) — full CRUD on faculty accounts:
+  - **Create**: the coordinator sets (or auto-generates) an initial
+    password and shares it with the faculty member directly — there's no
+    email step yet (that's Phase 8), so the password is shown once on
+    screen after creation.
+  - **Edit** (`/coordinator/faculty/[id]`, via the "Edit" link in the
+    table): update a faculty member's name and email, and optionally
+    reset their password (leave it blank to keep the current one).
+  - **Delete**: removes the account, but only if the faculty member
+    doesn't currently supervise any projects — the delete button is
+    disabled with an explanation otherwise, and `deleteFacultyAccount`
+    re-checks this server-side too, so a project is never left without a
+    supervisor. Reassign or delete their projects first (via a project's
+    own edit/delete, described below) if you need to remove the account.
 - **Students** (`/coordinator/students`) — add student records (name, roll
   number, email). Students never get a login; roll number must be unique.
 - **Weight Schemes** (`/coordinator/weight-schemes`) — configure how each
@@ -184,6 +194,63 @@ member or any coordinator — enforced in the page itself (not just by
 hiding links), verified end-to-end with a second faculty account that
 gets redirected away when it tries the first faculty's project URL
 directly.
+
+## SDLC / research phase tracking
+
+On a project's detail page (`/projects/[id]`), each phase row is expandable
+for the supervising faculty member or a coordinator (`src/app/projects/[id]/phase-row.tsx`,
+a client component using `useActionState` with the `updatePhaseProgress`
+Server Function in `src/lib/actions/phases.ts`):
+
+- Click a phase to expand it, choose a new **status** (Not started / In
+  progress / Completed), optionally add **notes**, and save.
+- Setting status to Completed stamps `completedAt`; moving it away from
+  Completed clears that timestamp again.
+- Any other logged-in user (a non-supervising faculty member) sees the same
+  rows read-only, with no edit control rendered.
+
+**Authorization is re-checked in the Server Function itself**, not just by
+which UI is shown: `updatePhaseProgress` loads the phase's parent project
+and confirms the caller is either a coordinator or that project's
+supervisor before writing anything, exactly the same defense-in-depth
+pattern used everywhere else in this app. This was verified end-to-end with
+a second faculty account attempting to view/edit a project it doesn't
+supervise — it's redirected away at the page level, so it never even sees
+the form.
+
+Both the faculty dashboard (`/dashboard`) and the coordinator's project
+table (`/coordinator/projects`) now show a **phases completed** count (and
+a small progress bar on the dashboard) computed from each project's
+`ProjectPhaseProgress` rows, so progress is visible without opening every
+project.
+
+## Editing & deleting projects
+
+Full CRUD is now in place for projects (`src/lib/actions/projects.ts`):
+
+- **Edit** (`/projects/[id]/edit`, reached via an "Edit project" button on the
+  detail page): faculty can change a project's title, description, weight
+  scheme, and student roster on any project they supervise. The project
+  **type** can't be changed after creation (its phase checklist depends on
+  it). The **supervisor** and **academic session** fields are shown
+  read-only to faculty and are only editable by a coordinator — enforced in
+  `updateProject` itself, not just by hiding the fields, so a tampered
+  request from a faculty account can't reassign either one.
+- **Delete** ("Delete project" button on the detail page, with an inline
+  confirm step before it submits): available to the supervising faculty
+  member or any coordinator. **Deletion is refused if the project has any
+  recorded `Mark` rows** — the button shows the reason and the project page
+  displays a note explaining marks must be removed first. This is a
+  deliberate safeguard against silently losing grading history; everything
+  else (`ProjectMember`, `ProjectPhaseProgress`, `WeeklyMeeting`,
+  `PlagiarismCheck`, `ThesisReview`) cascades on delete since none of that
+  represents a final grade.
+
+Both actions re-check authorization server-side the same way `createProject`
+and `updatePhaseProgress` do, verified end-to-end with a non-supervising
+faculty account that's redirected away before it can reach the edit page,
+and with a seeded project that has a mark attached to confirm delete is
+actually blocked (not just discouraged in the UI).
 
 ## Database commands
 

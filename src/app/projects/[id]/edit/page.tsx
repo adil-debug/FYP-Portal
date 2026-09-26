@@ -1,17 +1,33 @@
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
-import { ProjectForm } from "./project-form";
+import { ProjectForm } from "@/app/projects/new/project-form";
 
-export default async function NewProjectPage() {
+export default async function EditProjectPage(
+  props: PageProps<"/projects/[id]/edit">,
+) {
+  const { id } = await props.params;
   const user = await getCurrentUser();
   if (!user) {
     redirect("/login");
   }
 
+  const project = await prisma.project.findUnique({
+    where: { id },
+    include: { members: { select: { studentId: true } } },
+  });
+  if (!project) {
+    notFound();
+  }
+
+  const canEdit =
+    user.role === "COORDINATOR" || project.supervisorId === user.userId;
+  if (!canEdit) {
+    redirect(user.role === "COORDINATOR" ? "/coordinator/projects" : "/dashboard");
+  }
+
   const [sessions, weightSchemes, students, faculty] = await Promise.all([
     prisma.academicSession.findMany({
-      where: { isActive: true },
       orderBy: { createdAt: "desc" },
       select: { id: true, title: true },
     }),
@@ -29,24 +45,35 @@ export default async function NewProjectPage() {
           orderBy: { name: "asc" },
           select: { id: true, name: true, email: true },
         })
-      : Promise.resolve([]),
+      : prisma.user.findMany({
+          where: { id: project.supervisorId },
+          select: { id: true, name: true, email: true },
+        }),
   ]);
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-6 py-10">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-          New project
+          Edit project
         </h1>
-        <p className="mt-1 text-sm text-slate-600">
-          {user.role === "COORDINATOR"
-            ? "Create a project and assign it to a faculty supervisor."
-            : "Create a new project. You'll be the supervisor."}
-        </p>
+        <p className="mt-1 text-sm text-slate-600">{project.title}</p>
       </div>
 
       <ProjectForm
-        mode={{ kind: "create" }}
+        mode={{
+          kind: "edit",
+          projectId: project.id,
+          project: {
+            title: project.title,
+            description: project.description,
+            type: project.type,
+            academicSessionId: project.academicSessionId,
+            supervisorId: project.supervisorId,
+            weightSchemeId: project.weightSchemeId,
+            studentIds: project.members.map((m) => m.studentId),
+          },
+        }}
         sessions={sessions.map((s) => ({ id: s.id, label: s.title }))}
         weightSchemes={weightSchemes.map((s) => ({
           id: s.id,

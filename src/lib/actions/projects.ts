@@ -104,3 +104,155 @@ export async function createProject(
   revalidatePath("/coordinator/projects");
   redirect(`/projects/${projectId}`);
 }
+
+/**
+ * Updates an existing project's editable fields.
+ *
+ * Faculty may edit title, description, weight scheme, and the student
+ * roster on any project they supervise. Coordinators may additionally
+ * reassign the supervisor and the academic session, and may edit any
+ * project regardless of who supervises it.
+ */
+export async function updateProject(
+  _prevState: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  const user = await requireUser();
+
+  const projectId = String(formData.get("projectId") ?? "");
+  if (!projectId) {
+    return { error: "Missing project reference." };
+  }
+
+  const existing = await prisma.project.findUnique({ where: { id: projectId } });
+  if (!existing) {
+    return { error: "Project not found." };
+  }
+
+  const canEdit =
+    user.role === "COORDINATOR" || existing.supervisorId === user.userId;
+  if (!canEdit) {
+    return { error: "You are not authorized to edit this project." };
+  }
+
+  const title = String(formData.get("title") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+  const weightSchemeId = String(formData.get("weightSchemeId") ?? "");
+  const studentIds = formData.getAll("studentIds").map(String).filter(Boolean);
+
+  if (!title) {
+    return { error: "Project title is required." };
+  }
+  if (!weightSchemeId) {
+    return { error: "Please choose a weight scheme." };
+  }
+  if (studentIds.length === 0) {
+    return { error: "Select at least one student." };
+  }
+  if (studentIds.length > MAX_PROJECT_MEMBERS) {
+    return { error: `A project can have at most ${MAX_PROJECT_MEMBERS} students.` };
+  }
+  if (new Set(studentIds).size !== studentIds.length) {
+    return { error: "The same student was selected more than once." };
+  }
+
+  // Only a coordinator may move a project to a different supervisor or
+  // academic session; a faculty account's request for either is ignored
+  // and the existing values are kept, even if the form was tampered with.
+  const academicSessionId =
+    user.role === "COORDINATOR"
+      ? String(formData.get("academicSessionId") ?? existing.academicSessionId)
+      : existing.academicSessionId;
+  const supervisorId =
+    user.role === "COORDINATOR"
+      ? String(formData.get("supervisorId") ?? existing.supervisorId)
+      : existing.supervisorId;
+
+  if (user.role === "COORDINATOR") {
+    const supervisor = await prisma.user.findUnique({ where: { id: supervisorId } });
+    if (!supervisor || supervisor.role !== "FACULTY") {
+      return { error: "The selected supervisor is not a valid faculty account." };
+    }
+    const session = await prisma.academicSession.findUnique({
+      where: { id: academicSessionId },
+    });
+    if (!session) {
+      return { error: "The selected academic session no longer exists." };
+    }
+  }
+
+  try {
+    await prisma.$transaction([
+      prisma.projectMember.deleteMany({ where: { projectId } }),
+      prisma.project.update({
+        where: { id: projectId },
+        data: {
+          title,
+          description: description || null,
+          weightSchemeId,
+          academicSessionId,
+          supervisorId,
+          members: { create: studentIds.map((studentId) => ({ studentId })) },
+        },
+      }),
+    ]);
+  } catch {
+    return {
+      error:
+        "Could not update the project. Double-check the academic session and weight scheme still exist.",
+    };
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/coordinator/projects");
+  revalidatePath(`/projects/${projectId}`);
+  redirect(`/projects/${projectId}`);
+}
+
+/**
+ * Deletes a project and everything that cascades from it (members, phase
+ * progress, meetings, plagiarism checks, thesis reviews).
+ *
+ * Refuses to delete a project that already has any Mark rows, since those
+ * represent recorded grades — the coordinator/faculty must remove marks
+ * first, which is a deliberate speed bump against losing grading history
+ * by accident.
+ */
+export async function deleteProject(
+  _prevState: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  const user = await requireUser();
+
+  const projectId = String(formData.get("projectId") ?? "");
+  if (!projectId) {
+    return { error: "Missing project reference." };
+  }
+
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+    include: { _count: { select: { marks: true } } },
+  });
+  if (!project) {
+    return { error: "Project not found." };
+  }
+
+  const canDelete =
+    user.role === "COORDINATOR" || project.supervisorId === user.userId;
+  if (!canDelete) {
+    return { error: "You are not authorized to delete this project." };
+  }
+
+  if (project._count.marks > 0) {
+    return {
+      error:
+        "This project has recorded marks and can't be deleted. Remove its marks first.",
+    };
+  }
+
+  await prisma.project.delete({ where: { id: projectId } });
+
+  revalidatePath("/dashboard");
+  revalidatePath("/coordinator/projects");
+  redirect(user.role === "COORDINATOR" ? "/coordinator/projects" : "/dashboard");
+}

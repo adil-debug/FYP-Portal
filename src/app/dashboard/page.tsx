@@ -27,6 +27,7 @@ export default async function DashboardPage() {
     include: {
       members: { include: { student: true } },
       academicSession: true,
+      phases: { select: { status: true } },
     },
   });
 
@@ -76,28 +77,47 @@ export default async function DashboardPage() {
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
-            {projects.map((project) => (
-              <Link
-                key={project.id}
-                href={`/projects/${project.id}`}
-                className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-colors hover:border-indigo-300"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-700">
-                    {PROJECT_TYPE_LABELS[project.type]}
-                  </span>
-                  <span className="text-xs text-slate-400">
-                    {project.academicSession.title}
-                  </span>
-                </div>
-                <h2 className="font-semibold text-slate-900">
-                  {project.title}
-                </h2>
-                <p className="text-xs text-slate-500">
-                  {project.members.map((m) => m.student.name).join(", ")}
-                </p>
-              </Link>
-            ))}
+            {projects.map((project) => {
+              const completed = project.phases.filter(
+                (p) => p.status === "COMPLETED",
+              ).length;
+              const total = project.phases.length;
+              return (
+                <Link
+                  key={project.id}
+                  href={`/projects/${project.id}`}
+                  className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-colors hover:border-indigo-300"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-700">
+                      {PROJECT_TYPE_LABELS[project.type]}
+                    </span>
+                    <span className="text-xs text-slate-400">
+                      {project.academicSession.title}
+                    </span>
+                  </div>
+                  <h2 className="font-semibold text-slate-900">
+                    {project.title}
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    {project.members.map((m) => m.student.name).join(", ")}
+                  </p>
+                  <div className="mt-1 flex items-center gap-2">
+                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
+                      <div
+                        className="h-full rounded-full bg-indigo-500"
+                        style={{
+                          width: `${total === 0 ? 0 : (completed / total) * 100}%`,
+                        }}
+                      />
+                    </div>
+                    <span className="text-xs font-medium text-slate-500">
+                      {completed}/{total} phases
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         )}
       </main>

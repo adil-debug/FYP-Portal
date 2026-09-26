@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import { upsertMark } from "@/lib/actions/marks";
+import { upsertMark, deleteMark } from "@/lib/actions/marks";
 import {
   COMPONENT_TYPES,
   COMPONENT_LABELS,
@@ -14,6 +14,7 @@ import {
 import type { ActionResult } from "@/lib/actions/sessions";
 
 type MarkValue = {
+  id: string;
   marksAwarded: number;
   maxMarks: number;
   remarks: string | null;
@@ -319,6 +320,10 @@ function UnitMarkRow({
 }) {
   const [editing, setEditing] = useState(false);
   const [state, formAction, isPending] = useActionState(upsertMark, initialState);
+  const [deleteState, deleteAction, isDeleting] = useActionState(
+    deleteMark,
+    initialState,
+  );
 
   useEffect(() => {
     if (state.success) {
@@ -345,65 +350,85 @@ function UnitMarkRow({
   }
 
   return (
-    <form
-      action={formAction}
-      className="flex flex-col gap-1.5 rounded border border-indigo-300 bg-white p-2"
-    >
-      <input type="hidden" name="projectId" value={projectId} />
-      <input type="hidden" name="studentId" value={studentId} />
-      <input type="hidden" name="semester" value={semester} />
-      <input type="hidden" name="componentType" value={componentType} />
-      {weekNumber > 0 && <input type="hidden" name="weekNumber" value={weekNumber} />}
-      {phaseKey && <input type="hidden" name="phaseKey" value={phaseKey} />}
+    <div className="flex flex-col gap-1.5 rounded border border-indigo-300 bg-white p-2">
+      <form action={formAction} className="flex flex-col gap-1.5">
+        <input type="hidden" name="projectId" value={projectId} />
+        <input type="hidden" name="studentId" value={studentId} />
+        <input type="hidden" name="semester" value={semester} />
+        <input type="hidden" name="componentType" value={componentType} />
+        {weekNumber > 0 && <input type="hidden" name="weekNumber" value={weekNumber} />}
+        {phaseKey && <input type="hidden" name="phaseKey" value={phaseKey} />}
 
-      <p className="text-xs font-medium text-slate-700">{label}</p>
+        <p className="text-xs font-medium text-slate-700">{label}</p>
 
-      <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1">
+          <input
+            type="number"
+            name="marksAwarded"
+            min={0}
+            max={mark?.maxMarks}
+            step="0.01"
+            defaultValue={mark?.marksAwarded ?? ""}
+            autoFocus
+            className="field-input w-16 py-1 text-sm"
+          />
+          {mark && <span className="text-xs text-slate-400">/ {mark.maxMarks}</span>}
+        </div>
+
         <input
-          type="number"
-          name="marksAwarded"
-          min={0}
-          max={mark?.maxMarks}
-          step="0.01"
-          defaultValue={mark?.marksAwarded ?? ""}
-          autoFocus
-          className="field-input w-16 py-1 text-sm"
+          type="text"
+          name="remarks"
+          placeholder="Remarks (optional)"
+          defaultValue={mark?.remarks ?? ""}
+          className="field-input py-1 text-xs"
         />
-        {mark && <span className="text-xs text-slate-400">/ {mark.maxMarks}</span>}
-      </div>
 
-      <input
-        type="text"
-        name="remarks"
-        placeholder="Remarks (optional)"
-        defaultValue={mark?.remarks ?? ""}
-        className="field-input py-1 text-xs"
-      />
+        {state.error && (
+          <p className="text-xs font-medium text-red-600">{state.error}</p>
+        )}
 
-      {state.error && (
-        <p className="text-xs font-medium text-red-600">{state.error}</p>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="submit"
+            disabled={isPending}
+            className="btn-solid-primary px-2.5 py-1 text-xs"
+          >
+            {isPending ? "Saving…" : "Save"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setEditing(false)}
+            className="btn-outline px-2.5 py-1 text-xs"
+          >
+            Cancel
+          </button>
+        </div>
+        {state.success && (
+          <p className="text-xs font-medium text-green-600">Saved</p>
+        )}
+      </form>
+
+      {mark && (
+        <form action={deleteAction} className="border-t border-slate-100 pt-1.5">
+          <input type="hidden" name="markId" value={mark.id} />
+          <button
+            type="submit"
+            disabled={isDeleting}
+            onClick={(e) => {
+              if (!confirm(`Remove the mark for ${label}? This can't be undone.`)) {
+                e.preventDefault();
+              }
+            }}
+            className="text-xs font-medium text-red-500 hover:text-red-700 disabled:opacity-50"
+          >
+            {isDeleting ? "Removing…" : "Remove mark"}
+          </button>
+          {deleteState.error && (
+            <p className="text-xs font-medium text-red-600">{deleteState.error}</p>
+          )}
+        </form>
       )}
-
-      <div className="flex items-center gap-1.5">
-        <button
-          type="submit"
-          disabled={isPending}
-          className="btn-solid-primary px-2.5 py-1 text-xs"
-        >
-          {isPending ? "Saving…" : "Save"}
-        </button>
-        <button
-          type="button"
-          onClick={() => setEditing(false)}
-          className="btn-outline px-2.5 py-1 text-xs"
-        >
-          Cancel
-        </button>
-      </div>
-      {state.success && (
-        <p className="text-xs font-medium text-green-600">Saved</p>
-      )}
-    </form>
+    </div>
   );
 }
 
@@ -426,6 +451,10 @@ function MarkCell({
 }) {
   const [expanded, setExpanded] = useState(false);
   const [state, formAction, isPending] = useActionState(upsertMark, initialState);
+  const [deleteState, deleteAction, isDeleting] = useActionState(
+    deleteMark,
+    initialState,
+  );
 
   useEffect(() => {
     if (state.success) {
@@ -470,62 +499,82 @@ function MarkCell({
   }
 
   return (
-    <form
-      action={formAction}
-      className="flex flex-col gap-1.5 rounded-md border border-indigo-200 bg-indigo-50/40 p-2"
-    >
-      <input type="hidden" name="projectId" value={projectId} />
-      <input type="hidden" name="studentId" value={studentId} />
-      <input type="hidden" name="semester" value={semester} />
-      <input type="hidden" name="componentType" value={componentType} />
+    <div className="flex flex-col gap-1.5 rounded-md border border-indigo-200 bg-indigo-50/40 p-2">
+      <form action={formAction} className="flex flex-col gap-1.5">
+        <input type="hidden" name="projectId" value={projectId} />
+        <input type="hidden" name="studentId" value={studentId} />
+        <input type="hidden" name="semester" value={semester} />
+        <input type="hidden" name="componentType" value={componentType} />
 
-      <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1">
+          <input
+            type="number"
+            name="marksAwarded"
+            min={0}
+            max={max}
+            step="0.01"
+            defaultValue={mark?.marksAwarded ?? ""}
+            autoFocus
+            className="field-input w-16 py-1 text-sm"
+          />
+          <span className="text-xs text-slate-400">/ {max}</span>
+        </div>
+
         <input
-          type="number"
-          name="marksAwarded"
-          min={0}
-          max={max}
-          step="0.01"
-          defaultValue={mark?.marksAwarded ?? ""}
-          autoFocus
-          className="field-input w-16 py-1 text-sm"
+          type="text"
+          name="remarks"
+          placeholder="Remarks (optional)"
+          defaultValue={mark?.remarks ?? ""}
+          className="field-input py-1 text-xs"
         />
-        <span className="text-xs text-slate-400">/ {max}</span>
-      </div>
 
-      <input
-        type="text"
-        name="remarks"
-        placeholder="Remarks (optional)"
-        defaultValue={mark?.remarks ?? ""}
-        className="field-input py-1 text-xs"
-      />
+        {state.error && (
+          <p className="text-xs font-medium text-red-600">{state.error}</p>
+        )}
 
-      {state.error && (
-        <p className="text-xs font-medium text-red-600">{state.error}</p>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="submit"
+            disabled={isPending}
+            className="btn-solid-primary px-2.5 py-1 text-xs"
+          >
+            {isPending ? "Saving…" : "Save"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setExpanded(false)}
+            className="btn-outline px-2.5 py-1 text-xs"
+          >
+            Cancel
+          </button>
+        </div>
+        {state.success && (
+          <p className="text-xs font-medium text-green-600">
+            Saved &mdash; closing…
+          </p>
+        )}
+      </form>
+
+      {mark && (
+        <form action={deleteAction} className="border-t border-indigo-100 pt-1.5">
+          <input type="hidden" name="markId" value={mark.id} />
+          <button
+            type="submit"
+            disabled={isDeleting}
+            onClick={(e) => {
+              if (!confirm("Remove this mark? This can't be undone.")) {
+                e.preventDefault();
+              }
+            }}
+            className="text-xs font-medium text-red-500 hover:text-red-700 disabled:opacity-50"
+          >
+            {isDeleting ? "Removing…" : "Remove mark"}
+          </button>
+          {deleteState.error && (
+            <p className="text-xs font-medium text-red-600">{deleteState.error}</p>
+          )}
+        </form>
       )}
-
-      <div className="flex items-center gap-1.5">
-        <button
-          type="submit"
-          disabled={isPending}
-          className="btn-solid-primary px-2.5 py-1 text-xs"
-        >
-          {isPending ? "Saving…" : "Save"}
-        </button>
-        <button
-          type="button"
-          onClick={() => setExpanded(false)}
-          className="btn-outline px-2.5 py-1 text-xs"
-        >
-          Cancel
-        </button>
-      </div>
-      {state.success && (
-        <p className="text-xs font-medium text-green-600">
-          Saved &mdash; closing…
-        </p>
-      )}
-    </form>
+    </div>
   );
 }

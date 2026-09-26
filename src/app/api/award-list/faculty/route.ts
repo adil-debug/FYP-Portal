@@ -22,7 +22,9 @@ export async function GET() {
       academicSession: { select: { title: true } },
       supervisor: { select: { name: true } },
       members: { include: { student: true } },
-      marks: true,
+      marks: {
+        select: { studentId: true, semester: true, componentType: true, marksAwarded: true },
+      },
     },
   });
 

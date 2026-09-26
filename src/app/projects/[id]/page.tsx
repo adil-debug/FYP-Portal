@@ -24,18 +24,76 @@ export default async function ProjectDetailPage(
     redirect("/login");
   }
 
-  const project = await prisma.project.findUnique({
-    where: { id },
-    include: {
-      members: { include: { student: true } },
-      academicSession: true,
-      supervisor: { select: { id: true, name: true, email: true } },
-      weightScheme: { include: { componentWeights: true } }, // includes weeklyMeetingWeeks
-      phases: true,
-      marks: true,
-      _count: { select: { marks: true } },
-    },
-  });
+  // The project and its comments are independent reads (comments are
+  // keyed off the route's `id`, not off anything from `project`), so
+  // running them concurrently instead of one after another halves this
+  // page's DB wall-clock time against Neon, where every round-trip has
+  // real network latency to pay.
+  const [project, comments] = await Promise.all([
+    prisma.project.findUnique({
+      where: { id },
+      include: {
+        members: {
+          select: {
+            id: true,
+            studentId: true,
+            student: { select: { id: true, name: true, rollNumber: true } },
+          },
+        },
+        academicSession: { select: { title: true } },
+        supervisor: { select: { id: true, name: true, email: true } },
+        weightScheme: {
+          select: {
+            name: true,
+            weeklyMeetingWeeks: true,
+            componentWeights: {
+              select: { semester: true, componentType: true, maxMarks: true },
+            },
+          },
+        },
+        phases: {
+          select: {
+            id: true,
+            softwarePhase: true,
+            researchPhase: true,
+            status: true,
+            notes: true,
+            updatedAt: true,
+          },
+        },
+        marks: {
+          select: {
+            id: true,
+            studentId: true,
+            semester: true,
+            componentType: true,
+            weekNumber: true,
+            phaseKey: true,
+            marksAwarded: true,
+            maxMarks: true,
+            remarks: true,
+          },
+        },
+        _count: { select: { marks: true } },
+      },
+    }),
+    // Same rule as canView below: coordinator or this project's own
+    // supervisor. The comments list/create actions re-check access
+    // independently anyway (defense in depth), so fetching this
+    // alongside — before we've even confirmed the viewer can see the
+    // project — never leaks anything a later check wouldn't also guard.
+    prisma.projectComment.findMany({
+      where: { projectId: id },
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        body: true,
+        createdAt: true,
+        authorId: true,
+        author: { select: { name: true, role: true } },
+      },
+    }),
+  ]);
 
   if (!project) {
     notFound();
@@ -62,17 +120,6 @@ export default async function ProjectDetailPage(
   const canEditPhases =
     user.role === "COORDINATOR" || project.supervisorId === user.userId;
   const canEditMarks = canEditPhases; // same rule: supervisor or coordinator
-
-  // Same rule again: coordinator or this project's own supervisor. canView
-  // above already enforces this for the whole page, so every faculty
-  // member who reaches this point already qualifies — but the comments
-  // list/create actions re-check it independently anyway (defense in
-  // depth), so this fetch never has to trust the page-level check alone.
-  const comments = await prisma.projectComment.findMany({
-    where: { projectId: project.id },
-    orderBy: { createdAt: "asc" },
-    include: { author: { select: { name: true, role: true } } },
-  });
   const commentEntries: CommentEntry[] = comments.map((c) => ({
     id: c.id,
     body: c.body,
@@ -102,7 +149,10 @@ export default async function ProjectDetailPage(
   // weekNumber=0, phaseKey="".
   const marksBySemester: Record<
     string,
-    Record<string, { marksAwarded: number; maxMarks: number; remarks: string | null }>
+    Record<
+      string,
+      { id: string; marksAwarded: number; maxMarks: number; remarks: string | null }
+    >
   > = {};
   for (const semester of SEMESTERS) {
     marksBySemester[semester] = {};
@@ -110,6 +160,7 @@ export default async function ProjectDetailPage(
   for (const mark of project.marks) {
     const key = `${mark.studentId}_${mark.componentType}_${mark.weekNumber}_${mark.phaseKey}`;
     marksBySemester[mark.semester][key] = {
+      id: mark.id,
       marksAwarded: Number(mark.marksAwarded),
       maxMarks: Number(mark.maxMarks),
       remarks: mark.remarks,

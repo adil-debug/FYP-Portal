@@ -147,3 +147,47 @@ export async function upsertMark(
   revalidatePath(`/projects/${projectId}`);
   return { success: true };
 }
+
+/**
+ * Deletes a single mark entry outright (one week's WEEKLY_MEETINGS mark,
+ * one phase's SDLC_PHASE mark, or a simple component's only mark).
+ *
+ * This is the only way to make a component/unit go back to "no mark
+ * entered" — a mark of 0 is a real, deliberately-awarded score and still
+ * counts as an entry (it is NOT treated the same as never having marked
+ * it), so clearing a mark always means removing its row, never just
+ * setting the number to 0 or blank. That in turn is also the only way to
+ * get a project's mark count down to zero so deleteProject will allow
+ * the project to be deleted.
+ */
+export async function deleteMark(
+  _prevState: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  const user = await requireUser();
+
+  const markId = String(formData.get("markId") ?? "");
+  if (!markId) {
+    return { error: "Missing mark reference." };
+  }
+
+  const mark = await prisma.mark.findUnique({
+    where: { id: markId },
+    include: { project: { select: { supervisorId: true } } },
+  });
+  if (!mark) {
+    // Already gone — treat as success so a double-click can't error out.
+    return { success: true };
+  }
+
+  const canDelete =
+    user.role === "COORDINATOR" || mark.project.supervisorId === user.userId;
+  if (!canDelete) {
+    return { error: "You are not authorized to remove this mark." };
+  }
+
+  await prisma.mark.delete({ where: { id: markId } });
+
+  revalidatePath(`/projects/${mark.projectId}`);
+  return { success: true };
+}

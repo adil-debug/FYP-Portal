@@ -195,13 +195,21 @@ export async function updateProject(
       : existing.supervisorId;
 
   if (user.role === "COORDINATOR") {
-    const supervisor = await prisma.user.findUnique({ where: { id: supervisorId } });
+    // Independent lookups — run concurrently rather than one after
+    // another to avoid paying two sequential Neon round-trips here.
+    const [supervisor, session] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: supervisorId },
+        select: { role: true },
+      }),
+      prisma.academicSession.findUnique({
+        where: { id: academicSessionId },
+        select: { id: true },
+      }),
+    ]);
     if (!supervisor || supervisor.role !== "FACULTY") {
       return { error: "The selected supervisor is not a valid faculty account." };
     }
-    const session = await prisma.academicSession.findUnique({
-      where: { id: academicSessionId },
-    });
     if (!session) {
       return { error: "The selected academic session no longer exists." };
     }

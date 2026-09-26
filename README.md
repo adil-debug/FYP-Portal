@@ -709,6 +709,74 @@ this change, the same way you did for previous feature batches. If you
 still get a "Property does not exist on type 'PrismaClient'" build error
 afterwards, run `npm run db:generate` again.
 
+### Removing a mark (and unblocking project deletion)
+
+There was previously no way to actually remove a mark once entered — the
+marks grid could only create or update one, and a blank input was
+rejected outright ("Enter a mark."). That meant a project with any marks
+recorded could never be deleted: `deleteProject` refuses to delete a
+project with recorded marks (on purpose, as a guard against losing
+grading history by accident), but there was no way to get that count
+back down to zero.
+
+Every entered mark (a simple component, or one week/phase inside an
+expanded Weekly meetings / SDLC-phase cell) now has a **Remove mark**
+link beneath it, which deletes that mark row outright after a
+confirmation prompt (`deleteMark` in `src/lib/actions/marks.ts`). A mark
+of `0` is a real, deliberately-awarded score and still counts as
+recorded — it is never treated as equivalent to "no mark" — so removing
+a mark always means deleting its row, not zeroing it out. Once every
+mark on a project has been removed this way, its recorded-marks count
+drops to zero and the project can be deleted normally.
+
+### Deleting a student
+
+Both a coordinator and any faculty member can now delete a student record
+from the Students table (`/coordinator/students` and `/students`), using
+the same `Delete` link and inline confirmation used elsewhere in the app.
+`deleteStudent` (`src/lib/actions/students.ts`) uses the same
+authorization as creating a student — any authenticated user, since a
+student record isn't owned by whoever added it.
+
+A student who is still a member of any project can't be deleted (a clear
+message says so instead of a raw database error) — the
+Student&nbsp;&harr;&nbsp;ProjectMember/Mark relations aren't
+cascading deletes, so remove the student from their project(s) first
+(via that project's edit page) before deleting the record itself.
+
+### Performance on Vercel + Neon
+
+The app felt laggy in production, traced to how it talks to Neon's
+serverless Postgres rather than to the queries themselves:
+
+- **Pooled vs. direct connection string.** Neon gives you two connection
+  strings — a direct one and a pooled one (through PgBouncer, hostname
+  contains `-pooler`). On Vercel, each request can run in its own
+  short-lived serverless function; using the *direct* string means every
+  cold instance opens a brand-new physical connection to Postgres, which
+  is slow and can hit connection limits under load. **If your
+  `DATABASE_URL` doesn't contain `-pooler` and `pgbouncer=true`, switch to
+  the pooled string from Neon's dashboard** — see the updated Deployment
+  section above. This is almost always the biggest lever.
+- `src/lib/prisma.ts` now passes explicit pool options to
+  `@prisma/adapter-pg` (`max: 3`, plus idle/connection timeouts) instead
+  of leaving `pg`'s defaults in place, so each serverless instance holds
+  only a handful of connections rather than an unbounded number.
+- The project detail page (`/projects/[id]`, the most-visited route) was
+  running its project query and its comments query one after another;
+  they're independent, so they now run concurrently with `Promise.all`,
+  roughly halving that page's database wall-clock time.
+- Several `include`s that pulled every column of a relation (`marks:
+  true` on the project page and both award-list CSV routes) were
+  narrowed to `select`s naming only the fields actually used, cutting the
+  amount of data Neon has to serialize and send back per request.
+- `updateProject`'s supervisor/session validation lookups (only relevant
+  when a coordinator changes either) now also run concurrently instead
+  of sequentially.
+
+None of this changes behavior — it's the same data, same validation,
+same authorization, just fewer and lighter round-trips to the database.
+
 ## Database commands
 
 ```bash
@@ -727,9 +795,16 @@ if a secret is ever accidentally committed — see **`DEPLOYMENT.md`**.
 
 1. Go to [neon.tech](https://neon.tech) and sign up (free tier).
 2. Click **Create a project**, give it a name (e.g. `project-oversight-portal`).
-3. On the project dashboard, click **Connection Details** and copy the
-   **connection string** (it looks like
-   `postgresql://<user>:<password>@<host>/<db>?sslmode=require`).
+3. On the project dashboard, click **Connection Details**. Neon shows two
+   connection strings — make sure the **"Pooled connection"** toggle is
+   **on** before copying (the hostname will contain `-pooler`, and the
+   string will end in `&pgbouncer=true`). Vercel functions are
+   serverless: every request can run in its own short-lived process, and
+   the pooled string routes those through Neon's connection pooler
+   instead of each one opening a brand-new direct Postgres connection.
+   Using the *unpooled* string here is the single most common cause of a
+   Neon-backed app feeling slow (or hitting "too many connections"
+   errors) on Vercel.
 4. Paste it into your local `.env` as `DATABASE_URL`, then run:
    ```bash
    npm run db:migrate
@@ -740,8 +815,11 @@ if a secret is ever accidentally committed — see **`DEPLOYMENT.md`**.
 
 1. In your Vercel project (from Phase 1) go to **Settings → Environment
    Variables**.
-2. Add `DATABASE_URL` with the same Neon connection string, for the
-   **Production**, **Preview**, and **Development** environments.
+2. Add `DATABASE_URL` with the same Neon **pooled** connection string
+   (see step 1 above — hostname contains `-pooler`), for the
+   **Production**, **Preview**, and **Development** environments. If the
+   app is already deployed and feels laggy, double check this: an
+   unpooled `DATABASE_URL` is the most common cause.
 3. Add `SESSION_SECRET` with a freshly generated random value (do **not**
    reuse the placeholder from `.env.example`):
    ```bash

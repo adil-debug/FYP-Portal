@@ -39,3 +39,49 @@ export async function createStudent(
   revalidatePath("/students");
   return { success: true };
 }
+
+/**
+ * Deletes a student record. Both a coordinator and any faculty member may
+ * call this — same authorization as createStudent, since a student isn't
+ * owned by whoever created or manages them.
+ *
+ * Refuses to delete a student who is still a member of any project: the
+ * Student <-> ProjectMember/Mark relations aren't cascading deletes, so
+ * this is both a data-integrity guard (a raw FK violation would otherwise
+ * surface as a confusing database error) and the same deliberate speed
+ * bump used for deleteProject — remove the student from their project(s)
+ * first (via the project's edit page), which also takes their marks with
+ * it, before the record itself can be removed.
+ */
+export async function deleteStudent(
+  _prevState: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  await requireUser();
+
+  const studentId = String(formData.get("studentId") ?? "");
+  if (!studentId) {
+    return { error: "Missing student reference." };
+  }
+
+  const student = await prisma.student.findUnique({
+    where: { id: studentId },
+    include: { _count: { select: { memberships: true } } },
+  });
+  if (!student) {
+    return { error: "Student not found." };
+  }
+
+  if (student._count.memberships > 0) {
+    return {
+      error:
+        "This student is still assigned to a project and can't be deleted. Remove them from the project first.",
+    };
+  }
+
+  await prisma.student.delete({ where: { id: studentId } });
+
+  revalidatePath("/coordinator/students");
+  revalidatePath("/students");
+  return { success: true };
+}

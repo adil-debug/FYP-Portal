@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ListSearch } from "@/components/list-search";
+import { DeleteStudentButton } from "./delete-student-button";
 
 export type StudentRow = {
   id: string;
@@ -41,12 +42,13 @@ export function StudentsTable({ students }: { students: StudentRow[] }) {
               <th className="px-4 py-3">Roll number</th>
               <th className="px-4 py-3">Email</th>
               <th className="px-4 py-3">Projects</th>
+              <th className="px-4 py-3" />
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-slate-400">
+                <td colSpan={5} className="px-4 py-6 text-center text-slate-400">
                   {students.length === 0
                     ? "No students yet. Add one above."
                     : "No students match your search."}
@@ -64,6 +66,9 @@ export function StudentsTable({ students }: { students: StudentRow[] }) {
                 <td className="px-4 py-3 text-slate-600">{student.email}</td>
                 <td className="px-4 py-3 text-slate-600">
                   {student.projectCount}
+                </td>
+                <td className="px-4 py-3 text-right align-top">
+                  <DeleteStudentButton studentId={student.id} />
                 </td>
               </tr>
             ))}

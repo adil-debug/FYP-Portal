@@ -169,9 +169,11 @@ export async function updateProject(
   if (!weightSchemeId) {
     return { error: "Please choose a weight scheme." };
   }
-  if (studentIds.length === 0) {
-    return { error: "Select at least one student." };
-  }
+  // Unlike createProject, editing does NOT require at least one student —
+  // this is the only way to uncheck a project's sole remaining member (to
+  // reassign them, or so the student record itself can later be deleted,
+  // which requires them to not be on any project). A project can sit with
+  // zero students assigned in the meantime.
   if (studentIds.length > MAX_PROJECT_MEMBERS) {
     return { error: `A project can have at most ${MAX_PROJECT_MEMBERS} students.` };
   }

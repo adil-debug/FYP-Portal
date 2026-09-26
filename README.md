@@ -777,7 +777,20 @@ serverless Postgres rather than to the queries themselves:
 None of this changes behavior — it's the same data, same validation,
 same authorization, just fewer and lighter round-trips to the database.
 
-## Database commands
+### Removing a student from a project
+
+A project's student checklist, on its edit page
+(`/projects/[id]/edit`), was already meant to let you uncheck a student
+to remove them — but editing required at least one student to always
+remain selected, so if a project had only one student (the common case)
+unchecking them was silently rejected. This is fixed: editing a project
+no longer requires any minimum number of students, so a project can be
+saved with zero students assigned (e.g. while reassigning, or so the
+student record can then be deleted — [deleting a
+student](#deleting-a-student) still requires them to not be on any
+project). Creating a new project still requires at least one student, as
+before.
+
 
 ```bash
 npm run db:migrate   # create & apply a new migration from schema changes
